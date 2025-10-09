@@ -29,9 +29,9 @@ linestretch: 1.5
 toc: true
 toc-title: "MỤC LỤC"
 lof: true
-lof-title: "PHỤ LỤC HÌNH ẢNH"
+lof-title: "DANH SÁCH HÌNH VẼ"
 lot: true
-lot-title: "PHỤ LỤC BẢNG"
+lot-title: "DANH SÁCH BẢNG"
 numbersections: false
 figureTitle: "Hình"
 tableTitle: "Bảng"
@@ -44,6 +44,11 @@ tblPrefix:
 eqnPrefix: "Phương trình"
 chaptersDepth: 2
 sectionsDepth: 0
+# Thêm cấu hình cho bảng có border
+tables: true
+link-citations: true
+reference-section-title: "Tài liệu tham khảo"
+autoSectionLabels: true
 ---
 
 # LỜI CẢM ƠN {-}
@@ -64,13 +69,12 @@ Trong những năm trở lại đây...
 
 Như thể hiện trong [@fig:architecture], hệ thống bao gồm...
 
-Table: Bảng cấu trúc Role {#tbl:role}
+: Bảng cấu trúc Role {#tbl:role}
 
 | STT | Thuộc tính | Kiểu dữ liệu |
 |:---:|:-----------|:------------:|
 | 1   | id         | BIGINT       |
 | 2   | name       | VARCHAR(50)  |
-
 
 Cấu trúc bảng Role ([@tbl:role]) mô tả...
 
@@ -83,3 +87,19 @@ L = \sum (r_{ui} - u_u \cdot v_i^T)^2 + \lambda(||u_u||^2 + ||v_i||^2)
 $$ {#eq:loss}
 
 Từ phương trình [@eq:loss], ta có thể thấy...
+
+
+# Snag sang sang 
+
+sjfhsdklfjsadklfas fasdfsafasjfsalkfkasfsaf 
+
+
+: Bảng cấu trúc cak {#tbl:cak}
+
+| STT | Thuộc tính | Kiểu dữ liệu |
+|:---:|:-----------|:------------:|
+| 1   | id         | BIGINT       |
+| 2   | name       | VARCHAR(50)  |
+| 2   | cak       | VARCHAR(50)  |
+
+Cấu trúc bảng Role ([@tbl:role]) mô tả...

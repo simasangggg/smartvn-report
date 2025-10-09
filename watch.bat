@@ -1,0 +1,3 @@
+@echo off
+echo 🔍 Đang theo dõi thay đổi file .md...
+nodemon -e md -x "build.bat" --watch .

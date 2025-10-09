@@ -1,0 +1,16 @@
+# Output files
+*.docx
+*.pdf
+
+# Temporary files
+*.tmp
+*~
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Node
+node_modules/
+package-lock.json

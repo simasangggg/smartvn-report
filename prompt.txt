@@ -1,0 +1,368 @@
+# PROMPT CHO GITHUB COPILOT — VIẾT BÁO CÁO ĐỒ ÁN HỆ THỐNG NHÚNG
+
+---
+
+## HƯỚNG DẪN TỔNG QUÁT CHO COPILOT
+
+Bạn là một trợ lý viết báo cáo kỹ thuật tiếng Việt chuyên nghiệp. Hãy viết một file `.md` hoàn chỉnh cho báo cáo đồ án môn học **Xây dựng hệ thống nhúng** theo đúng cấu trúc và nội dung được mô tả dưới đây.
+
+**Quy tắc bắt buộc:**
+- Toàn bộ nội dung viết bằng tiếng Việt, văn phong học thuật, trang trọng.
+- Chỉ sử dụng đúng số liệu, tên file, tên thư viện, thông số kỹ thuật đã được cung cấp trong phần MÔ TẢ NỘI DUNG bên dưới. Không bịa đặt thêm bất kỳ thông số hay kết quả nào.
+- Heading chương dùng `#` (Header 1). Các mục con cấp 1 (ví dụ: 1.1, 2.1...) dùng `##`. Các mục nhỏ hơn dùng `###`.
+- Tại những chỗ cần chèn hình ảnh, viết rõ chú thích dạng: `> 📷 **[CHÈN HÌNH]** Mô tả hình cần chèn ở đây`
+- Không tự ý thêm bảng biểu, sơ đồ, hay nội dung không có trong mô tả.
+- Viết văn xuôi mạch lạc, có thể dùng danh sách gạch đầu dòng cho các phần liệt kê kỹ thuật.
+
+---
+
+## CẤU TRÚC FILE .MD CẦN TẠO
+
+### PHẦN 1: TRANG BÌA
+
+Viết phần trang bìa dạng markdown với các thông tin:
+- Tiêu đề: **BÁO CÁO ĐỒ ÁN MÔN HỌC**
+- Tên đề tài: **XÂY DỰNG HỆ THỐNG PHÁT HIỆN VÀ CẢNH BÁO BUỒN NGỦ CHO TÀI XẾ SỬ DỤNG ESP32-CAM VÀ CẢM BIẾN MẮT**
+- Môn học: Xây dựng các hệ thống nhúng
+- Giảng viên hướng dẫn: TS. Nguyễn Trọng Kiên
+- Lớp: D22CQCNPM01-N
+- Danh sách thành viên nhóm (dạng bảng markdown):
+
+| Họ và tên | MSSV | Vai trò |
+|---|---|---|
+| [Tên nhóm trưởng — để trống, tự điền sau] | | Nhóm trưởng |
+| [Tên thành viên 1] | | Thành viên |
+| [Tên thành viên 2] | | Thành viên |
+| [Tên thành viên 3] | | Thành viên |
+
+- Thời gian: Tháng 4 năm 2026
+
+---
+
+### PHẦN 2: LỜI CẢM ƠN
+
+Viết một đoạn lời cảm ơn khoảng 150–200 từ. Nội dung cảm ơn:
+- Giảng viên hướng dẫn TS. Nguyễn Trọng Kiên đã định hướng và hỗ trợ trong suốt quá trình thực hiện đồ án.
+- Trường Học viện Công nghệ Bưu chính Viễn thông đã cung cấp môi trường học tập.
+- Các thành viên trong nhóm đã phối hợp chặt chẽ để hoàn thành đồ án.
+- Ghi chú rằng đây là đề tài kết hợp phần cứng nhúng và học máy nên có nhiều thử thách thực tế.
+
+---
+
+### PHẦN 3: MỤC LỤC
+
+Viết mục lục markdown tự động (dùng cú pháp link nội bộ `[Tên mục](#anchor)`) với đầy đủ các chương và mục đã được liệt kê trong cấu trúc bên dưới.
+
+---
+
+### PHẦN 4: TÓM TẮT
+
+Viết phần tóm tắt khoảng 200–250 từ với nội dung:
+
+Đồ án trình bày quá trình thiết kế và triển khai một **hệ thống phát hiện buồn ngủ cho tài xế** theo kiến trúc phân tán gồm hai thành phần: **ESP32-CAM** (AI Thinker) đóng vai trò thu thập hình ảnh và phát cảnh báo tại chỗ qua còi buzzer; **Laptop** đóng vai trò Server AI chạy Python để phân tích hình ảnh và ra quyết định.
+
+Hệ thống sử dụng thư viện **MediaPipe FaceLandmarker (Tasks API)** để phát hiện landmark khuôn mặt, từ đó tính toán chỉ số **EAR (Eye Aspect Ratio)** và **PERCLOS** để xác định trạng thái mắt. Ngoài ra, nhóm đã tự huấn luyện một **mô hình CNN 2D (eye_model_int8.tflite)** để phân loại trạng thái mắt mở/nhắm, đạt độ chính xác validation khoảng 97%, và thực hiện quantize sang định dạng int8 để tối ưu triển khai.
+
+Hệ thống được thiết kế theo **hai phương án triển khai**: nhúng model trực tiếp vào board ESP32 và phương án client-server với laptop làm server. Báo cáo trình bày chi tiết ưu/nhược điểm của từng phương án và định hướng cải tiến cho báo cáo cuối kỳ.
+
+---
+
+# CHƯƠNG I. TỔNG QUAN ĐỀ TÀI
+
+## 1.1. Giới thiệu bài toán
+
+Nội dung cần viết:
+- Đặt vấn đề: buồn ngủ khi lái xe là nguyên nhân gây tai nạn nghiêm trọng, đặc biệt với tài xế đường dài.
+- Các hệ thống nhận dạng buồn ngủ hiện tại thường yêu cầu phần cứng đắt tiền hoặc kết nối cloud, không phù hợp với xe phổ thông.
+- Đồ án đề xuất giải pháp sử dụng **ESP32-CAM** (giá rẻ) kết hợp xử lý AI trên **laptop nội bộ** để tránh phụ thuộc cloud, giảm độ trễ và chi phí triển khai.
+
+## 1.2. Mục tiêu hệ thống
+
+Nội dung cần viết (dạng danh sách):
+- **Thu thập hình ảnh tại biên (Edge Capture):** Lập trình firmware ESP32-CAM để chụp ảnh JPEG liên tục ở độ phân giải **FRAMESIZE_VGA (640×480)**, `jpeg_quality = 10`, phục vụ WebServer tại cổng 80 với các endpoint `/capture`, `/buzz`, `/ping`.
+- **Truyền ảnh qua WiFi:** ESP32 gửi JPEG về Server qua HTTP, Server gọi lại endpoint `/buzz` để kích hoạt còi báo động khi phát hiện buồn ngủ.
+- **Xử lý AI trên Server:** Triển khai pipeline phân tích hình ảnh với MediaPipe FaceLandmarker, tính EAR và PERCLOS để phân loại trạng thái tài xế.
+- **Model tự huấn luyện:** Xây dựng và huấn luyện mô hình CNN phân loại mắt mở/nhắm (eye_model_int8.tflite), tích hợp vào pipeline.
+- **Cảnh báo phần cứng:** Khi phát hiện buồn ngủ, Server gọi HTTP GET `/buzz` → ESP32 kích buzzer qua GPIO12 trong 1 giây.
+
+---
+
+# CHƯƠNG II. CƠ SỞ LÝ THUYẾT & CÔNG NGHỆ
+
+## 2.1. Thuật toán phát hiện buồn ngủ — EAR và PERCLOS
+
+Nội dung cần viết:
+- **EAR (Eye Aspect Ratio):** Giải thích công thức EAR = (||p2–p6|| + ||p3–p5||) / (2 × ||p1–p4||), trong đó p1–p6 là 6 landmark của mắt. EAR tiến về 0 khi mắt nhắm, tiến về ~0.3 khi mắt mở. Ngưỡng sử dụng: `EAR_THRESHOLD = 0.22`.
+- **PERCLOS (Percentage of Eye Closure):** Tỷ lệ phần trăm số frame mắt nhắm trong một cửa sổ thời gian (`PERCLOS_WINDOW = 30 frame`). PERCLOS ≥ 35% → trạng thái "drowsy"; PERCLOS ≥ 25% → trạng thái "warning".
+- **Microsleep:** Nếu mắt nhắm liên tiếp ≥ 10 frame (`MICROSLEEP_FRAMES = 10`) → trạng thái "microsleep".
+- **Night mode / CLAHE:** Khi độ sáng trung bình frame < 80 (`NIGHT_THRESHOLD = 80`), áp dụng CLAHE (`clipLimit=2.0`, `tileGridSize=(8,8)`) để cải thiện độ tương phản trước khi nhận diện.
+
+## 2.2. MediaPipe FaceLandmarker (Tasks API)
+
+Nội dung cần viết:
+- Giới thiệu MediaPipe Tasks API, phân biệt với module cũ `mp.solutions`.
+- Model sử dụng: `face_landmarker.task` (~6MB), tự động tải về khi chưa có.
+- Cấu hình: `num_faces=1`, `min_face_detection_confidence=0.5`, `min_tracking_confidence=0.5`.
+- Chỉ số landmark mắt sử dụng: LEFT_EYE = [362, 385, 387, 263, 373, 380], RIGHT_EYE = [33, 160, 158, 133, 153, 144].
+
+## 2.3. Mạng CNN 2D cho phân loại mắt (eye_model_int8.tflite)
+
+Nội dung cần viết:
+- Giới thiệu bài toán phân loại nhị phân: mắt mở (open) vs mắt nhắm (closed).
+- Input: ảnh grayscale 32×32 pixel (như minh họa trong `sample_preview.png`).
+- Kiến trúc mạng CNN 2D (notebook `cnn2d.ipynb`): các lớp Conv2D, MaxPooling, Dense, Dropout.
+- Kết quả huấn luyện: val accuracy ~97%, loss hội tụ tốt (tham chiếu `training_history_m1.png`).
+- Confusion matrix (tham chiếu `confusion_matrix_m1.png`): TP = 8256 (closed-closed), TN = 8368 (open-open), FP = 223, FN = 134.
+- Quantize sang int8 TFLite để giảm kích thước, xuất file `eye_model_int8.tflite`.
+
+> 📷 **[CHÈN HÌNH]** `sample_preview.png` — Mẫu ảnh mắt 32×32 grayscale đã tiền xử lý dùng để huấn luyện model
+
+> 📷 **[CHÈN HÌNH]** `training_history_m1.png` — Đồ thị Loss và Accuracy trong quá trình huấn luyện Model 1 CNN ESP32
+
+> 📷 **[CHÈN HÌNH]** `confusion_matrix_m1.png` — Confusion Matrix của Model 1 trên tập kiểm tra
+
+## 2.4. Phần cứng ESP32-CAM và mạch cảnh báo
+
+Nội dung cần viết:
+- **ESP32-CAM (AI Thinker):** Module tích hợp camera OV2640, WiFi, chạy firmware Arduino.
+- **Board nạp ESP32-CAM-MB:** Hỗ trợ nạp code qua USB (cần nối IO0 → GND + nhấn RST để vào Download Mode).
+- **Mạch còi báo động:** Còi buzzer 5V active; điều khiển qua Transistor NPN (S8050/2N2222) + điện trở 1kΩ nối GPIO12. Chân dương buzzer cấp thẳng 5V; Transistor bảo vệ vi điều khiển khỏi dòng quá cao.
+- **Giao tiếp UART:** Chân U0T nối TXD, U0R nối RXD (board MB tự đảo dây nội bộ).
+
+## 2.5. Giao tiếp mạng WiFi và FastAPI Server
+
+Nội dung cần viết:
+- ESP32 chạy WebServer cổng 80 với 3 endpoint: `/capture` (JPEG), `/buzz` (kích còi 1 giây), `/ping` (kiểm tra kết nối).
+- Server Python dùng **FastAPI + uvicorn**, chạy endpoint `POST /predict` nhận JPEG multipart → trả JSON kết quả; `GET /status`; `POST /reset`.
+- AlertManager: dùng `pygame.mixer` phát beep cảnh báo âm thanh trên laptop (2 beep cho "drowsy", 3 beep cho "microsleep").
+
+---
+
+# CHƯƠNG III. THIẾT KẾ HỆ THỐNG
+
+## 3.1. Kiến trúc tổng thể
+
+Nội dung cần viết:
+- Hệ thống theo mô hình **Edge-to-Server**: ESP32-CAM (Edge) → WiFi → Python Server (Laptop).
+- Mô tả luồng dữ liệu: Camera chụp JPEG → ESP32 phục vụ qua HTTP → Server Python kéo ảnh định kỳ → chạy EyeDetector pipeline → nếu buồn ngủ thì gọi HTTP GET `/buzz` → ESP32 kích còi.
+- Ba thành phần chính: Firmware ESP32, Python AI Server (`drowsy_server.py` + `eye_detector.py`), Script test webcam (`test_cam.py`).
+
+> 📷 **[CHÈN HÌNH]** Sơ đồ kiến trúc tổng thể hệ thống (vẽ tay hoặc draw.io): ESP32-CAM → WiFi → Python Server → Buzzer
+
+## 3.2. Firmware ESP32-CAM
+
+Nội dung cần viết (tham chiếu file `esp32_drowsiness.ino`):
+- Cấu hình Camera: `FRAMESIZE_VGA`, `jpeg_quality = 10`.
+- WiFi: kết nối LAN nội bộ, lấy IP để Server có thể truy cập.
+- WebServer cổng 80:
+  - `/capture`: trả về JPEG frame hiện tại.
+  - `/buzz`: kích GPIO12 HIGH trong 1000ms (còi kêu 1 giây).
+  - `/ping`: trả về `{"status":"ok"}`.
+- Tối ưu: dùng partition scheme **Huge APP (3MB No OTA)** để đủ bộ nhớ cho camera firmware.
+
+## 3.3. Pipeline xử lý AI trên Server
+
+Nội dung cần viết (tham chiếu `eye_detector.py` và `drowsy_server.py`):
+
+Lớp `EyeDetector` thực hiện pipeline:
+1. **Tiền xử lý (`_preprocess`):** Chuyển BGR → Grayscale → tính `brightness`; nếu `brightness < 80` thì áp dụng CLAHE rồi chuyển GRAY → RGB; ngược lại chuyển BGR → RGB thẳng.
+2. **Nhận diện landmark (`FaceLandmarker.detect`):** Trả về 478 landmark khuôn mặt.
+3. **Tính EAR:** Dùng 6 điểm mỗi mắt (LEFT_EYE, RIGHT_EYE), tính EAR trái + phải rồi lấy trung bình.
+4. **Cập nhật trạng thái:** Cập nhật `_ear_buffer` (deque kích thước 30), `_closed_streak`.
+5. **Tính PERCLOS:** `sum(_ear_buffer) / len(_ear_buffer)`.
+6. **Phân loại trạng thái:** microsleep → drowsy → warning → awake (theo thứ tự ưu tiên).
+7. **Trả về dict kết quả** gồm: `state`, `ear`, `perclos`, `closed_streak`, `alert`, `brightness`, `night_mode`.
+
+Server FastAPI (`drowsy_server.py`): nhận JPEG từ ESP32 qua `POST /predict` multipart → gọi `detector.process_frame_bytes()` → nếu `alert=True` thì gọi `alerter.trigger()` phát beep.
+
+## 3.4. Luồng kiểm thử với webcam (`test_cam.py`)
+
+Nội dung cần viết:
+- Script `test_cam.py` dùng để test pipeline trực tiếp với webcam laptop, không cần ESP32.
+- Hiển thị overlay đầy đủ: trạng thái (TỈNH TÁO / CẢNH BÁO / BUỒN NGỦ / MICROSLEEP / KHÔNG PHÁT HIỆN MẶT), thanh PERCLOS có ngưỡng 35%, chỉ số EAR, streak, FPS, night mode.
+- Phím tắt: `Q`/`ESC` thoát; `R` reset state; `S` lưu screenshot.
+
+---
+
+# CHƯƠNG IV. TRIỂN KHAI & KẾT QUẢ
+
+## 4.1. Thiết lập phần cứng
+
+Nội dung cần viết:
+- Mô tả chi tiết sơ đồ đấu nối: ESP32-CAM cắm rời (không cắm chồng lên ESP32-CAM-MB do chân nông).
+- Mạch còi: GPIO12 → Điện trở 1kΩ → Base transistor NPN; Collector → Chân âm buzzer; Chân dương buzzer → 5V; Emitter → GND chung.
+- Quy trình nạp firmware: cắm IO0 xuống GND → nhấn RST → upload qua Arduino IDE → rút IO0 → nhấn RST để chạy.
+- Cài đặt Arduino IDE: Board **AI Thinker ESP32-CAM**, Upload Speed 115200, Partition **Huge APP (3MB No OTA)**.
+
+> 📷 **[CHÈN HÌNH]** Ảnh thực tế mạch đấu nối ESP32-CAM + Transistor NPN + Buzzer trên breadboard
+
+## 4.2. Mô hình tự huấn luyện — CNN phân loại mắt
+
+### 4.2.1. Chuẩn bị dữ liệu
+
+Nội dung cần viết:
+- Dataset gồm ảnh mắt được chia 2 lớp: **open** và **closed**.
+- Tiền xử lý: resize về **32×32 pixel**, chuyển grayscale, chuẩn hóa về [0, 1].
+- Ảnh mẫu sau tiền xử lý (tham chiếu `sample_preview.png`): 2 hàng — hàng trên là mắt mở, hàng dưới là mắt nhắm.
+- Tập train/val chia theo tỷ lệ chuẩn.
+
+### 4.2.2. Kiến trúc mạng và huấn luyện
+
+Nội dung cần viết (tham chiếu `cnn2d.ipynb`):
+- Kiến trúc CNN 2D với các lớp Conv2D → MaxPooling → Dropout → Dense → Sigmoid output.
+- Loss function: Binary Crossentropy. Optimizer: Adam.
+- Huấn luyện 50 epoch.
+- Kết quả: Train accuracy ~95%, Val accuracy ~97%, Loss hội tụ ổn định.
+- Đường val accuracy luôn cao hơn train accuracy (không bị overfit).
+
+> 📷 **[CHÈN HÌNH]** `training_history_m1.png` — Biểu đồ Loss (trái) và Accuracy (phải) theo epoch, đường đứt nét hồng là ngưỡng mục tiêu 90%
+
+### 4.2.3. Đánh giá mô hình
+
+Nội dung cần viết (tham chiếu `confusion_matrix_m1.png`):
+- Confusion Matrix trên tập test:
+  - True Open → Predicted Open: **8368** (đúng)
+  - True Open → Predicted Closed: **223** (sai — false positive)
+  - True Closed → Predicted Open: **134** (sai — false negative)
+  - True Closed → Predicted Closed: **8256** (đúng)
+- Tính precision, recall, F1 từ các con số trên (Copilot tự tính):
+  - Precision (closed) = 8256 / (8256 + 223)
+  - Recall (closed) = 8256 / (8256 + 134)
+- Nhận xét: mô hình đạt hiệu suất tốt, tỷ lệ lỗi thấp, đặc biệt tỷ lệ bỏ sót mắt nhắm (FN = 134) thấp hơn FP = 223, phù hợp với yêu cầu an toàn.
+
+> 📷 **[CHÈN HÌNH]** `confusion_matrix_m1.png` — Confusion Matrix Model 1
+
+### 4.2.4. Quantize và xuất TFLite
+
+Nội dung cần viết:
+- Sau khi huấn luyện, model được lượng tử hóa (post-training quantization) sang **int8** để giảm kích thước.
+- File xuất: `eye_model_int8.tflite`.
+- Mục đích: tối ưu để có thể triển khai trên thiết bị tài nguyên thấp (xem phần 5.1).
+
+## 4.3. Hai phương án triển khai (Launch Mode)
+
+Nội dung cần viết — đây là phần quan trọng, viết chi tiết và rõ ràng:
+
+### 4.3.1. Phương án 1: Client–Server (Laptop làm Server)
+
+**Mô tả cách triển khai:**
+- ESP32-CAM chỉ đóng vai trò **thu thập ảnh và phát cảnh báo phần cứng** (Edge Capture + Alert).
+- Laptop chạy Python Server (`drowsy_server.py`) nhận JPEG từ ESP32 qua HTTP, xử lý toàn bộ AI (MediaPipe + EyeDetector), gửi lệnh buzz về ESP32 khi cần.
+- Kết nối qua WiFi nội bộ (LAN).
+- Có thể mở Swagger UI tại `http://localhost:8000/docs` để test thủ công.
+
+**Ưu điểm:**
+- Không giới hạn tài nguyên tính toán: laptop có CPU mạnh, RAM lớn, có thể chạy MediaPipe FaceLandmarker (model 6MB) và model TFLite mà không lo thiếu bộ nhớ.
+- Dễ cập nhật và debug: chỉnh sửa code Python trên laptop, không cần flash lại firmware ESP32.
+- Linh hoạt: có thể nâng cấp model AI mà không thay đổi phần cứng.
+- AlertManager tích hợp phát beep âm thanh qua loa laptop, ngoài còi phần cứng.
+
+**Nhược điểm:**
+- Phụ thuộc vào laptop: nếu laptop tắt hoặc mất kết nối WiFi, hệ thống ngừng hoạt động.
+- Độ trễ mạng: ảnh JPEG phải đi qua WiFi LAN trước khi xử lý, thêm latency so với xử lý cục bộ.
+- Không độc lập (non-standalone): không phù hợp để triển khai trên xe thực tế mà không có laptop đi kèm.
+- Tiêu thụ điện: laptop phải luôn bật.
+
+### 4.3.2. Phương án 2: Nhúng thẳng model vào board ESP32 (Edge AI)
+
+**Mô tả cách triển khai:**
+- Model `eye_model_int8.tflite` được nạp trực tiếp vào firmware ESP32 thông qua thư viện **TensorFlow Lite for Microcontrollers (TFLM)**.
+- ESP32 tự chụp ảnh → cắt vùng mắt → resize 32×32 → chạy inference CNN → ra quyết định → kích còi — tất cả diễn ra ngay trên chip, không cần kết nối mạng.
+- Phần landmark phát hiện vùng mắt có thể dùng Haar Cascade nhẹ hơn hoặc dựa vào tọa độ cố định (centercrop).
+
+**Ưu điểm:**
+- Hoàn toàn độc lập (standalone): không cần laptop, không cần WiFi, có thể gắn thẳng lên xe.
+- Độ trễ thấp hơn: không có overhead truyền ảnh qua WiFi.
+- Tiết kiệm điện hơn so với cả hệ thống có laptop.
+- Dễ đóng gói thành sản phẩm thực tế.
+
+**Nhược điểm:**
+- Tài nguyên rất hạn chế: ESP32-CAM chỉ có ~520KB SRAM, trong khi model int8 (eye_model_int8.tflite) và buffer ảnh có thể chiếm phần lớn RAM.
+- Không thể chạy MediaPipe FaceLandmarker (model 6MB) trên ESP32 → phải dùng phương pháp phát hiện vùng mắt đơn giản hơn.
+- Khó debug và cập nhật: mỗi lần thay đổi model hay logic phải flash lại toàn bộ firmware.
+- Độ chính xác có thể thấp hơn do không có landmark chính xác như MediaPipe.
+
+### 4.3.3. Bảng so sánh hai phương án
+
+Viết bảng markdown so sánh với các tiêu chí: Độc lập phần cứng, Độ trễ, Tài nguyên yêu cầu, Độ chính xác, Dễ cập nhật, Phù hợp triển khai thực tế.
+
+---
+
+# CHƯƠNG V. KẾT LUẬN & HƯỚNG PHÁT TRIỂN
+
+## 5.1. Kết quả đạt được
+
+Nội dung cần viết:
+
+Liệt kê các kết quả cụ thể đã đạt được:
+1. **Phần cứng:** Đã thi công thành công mạch ESP32-CAM + Transistor NPN + Buzzer. Firmware hoạt động ổn định, WebServer phục vụ được endpoint `/capture`, `/buzz`, `/ping`. Đã kết nối WiFi và lấy IP LAN thành công.
+2. **Pipeline AI (Server):** Đã triển khai thành công `eye_detector.py` với EAR, PERCLOS, microsleep detection, night mode CLAHE. `drowsy_server.py` (FastAPI) nhận JPEG từ ESP32, xử lý và kích còi khi cần.
+3. **Mô hình tự huấn luyện:** Đã huấn luyện thành công CNN 2D phân loại mắt mở/nhắm đạt val accuracy ~97%. Đã quantize sang int8 TFLite (`eye_model_int8.tflite`).
+4. **Kiểm thử:** Đã kiểm thử pipeline hoàn chỉnh với webcam laptop qua `test_cam.py`. Phân loại trạng thái awake/warning/drowsy/microsleep/no_face hoạt động đúng.
+
+## 5.2. Hạn chế hiện tại
+
+Nội dung cần viết:
+- Phương án hiện tại (client-server) phụ thuộc vào laptop, chưa độc lập hoàn toàn.
+- Chưa tích hợp model CNN tự huấn luyện (`eye_model_int8.tflite`) trực tiếp vào `eye_detector.py` — hiện tại vẫn dùng MediaPipe + EAR là chính.
+- Mạch đấu nối còn nhiều dây nhợ trên breadboard, chưa được gọn gàng và chưa có vỏ bảo vệ.
+- Chưa test ở điều kiện thực tế trên xe (độ rung, ánh sáng thay đổi, góc camera).
+- Ngưỡng EAR (`0.22`) và PERCLOS (`35%`) được đặt cứng (hard-code), chưa cá nhân hóa theo từng người dùng.
+
+## 5.3. Hướng cải tiến cho báo cáo cuối kỳ
+
+Nội dung cần viết (đây là kế hoạch cụ thể cho kỳ tới):
+
+1. **Tối ưu phần cứng — giảm dây nhợ:**
+   - Thiết kế PCB hoặc sử dụng module gọn hơn để thay thế breadboard.
+   - Tích hợp nguồn cấp điện từ cổng USB xe hoặc pin sạc.
+   - Đóng gói toàn bộ vào hộp nhựa gắn được lên kính chắn gió hoặc taplo.
+
+2. **Tích hợp model CNN vào pipeline:**
+   - Kết hợp `eye_model_int8.tflite` với pipeline MediaPipe: dùng MediaPipe phát hiện vùng mắt, sau đó đưa ảnh 32×32 vào CNN để tăng độ chính xác phân loại so với chỉ dùng EAR.
+   - Cải thiện dataset: thu thập thêm ảnh mắt của người Châu Á, ảnh ban đêm, ảnh đeo kính.
+
+3. **Thử nghiệm Edge AI (Phương án 2):**
+   - Tích hợp `eye_model_int8.tflite` vào firmware ESP32 dùng TensorFlow Lite for Microcontrollers.
+   - Đánh giá khả năng chạy inference trực tiếp trên chip, đo latency và độ chính xác so với phương án server.
+
+4. **Cải thiện độ chính xác model:**
+   - Augmentation dữ liệu mạnh hơn: flip, rotation, brightness jitter, Gaussian noise.
+   - Thử nghiệm kiến trúc nhẹ hơn (MobileNetV2, EfficientNet-Lite) để tăng accuracy trong khi vẫn đủ nhỏ cho ESP32.
+   - Fine-tune ngưỡng EAR và PERCLOS dựa trên thực nghiệm đa người dùng.
+
+5. **Thêm tính năng:**
+   - Phát hiện ngáp (yawn detection) dùng landmark miệng.
+   - Log dữ liệu buồn ngủ theo thời gian để phân tích sau hành trình.
+   - Gửi cảnh báo qua ứng dụng điện thoại (MQTT hoặc WebSocket).
+
+---
+
+## TÀI LIỆU THAM KHẢO
+
+Viết danh sách tài liệu tham khảo dạng markdown có đánh số:
+
+1. Google. (2024). *MediaPipe Tasks — Face Landmarker*. Truy cập từ: https://developers.google.com/mediapipe/solutions/vision/face_landmarker
+2. Soukupová, T., & Čech, J. (2016). *Real-Time Eye Blink Detection Using Facial Landmarks*. 21st Computer Vision Winter Workshop.
+3. Espressif Systems. (2025). *ESP32-CAM Getting Started Guide*. Truy cập từ: https://docs.espressif.com/
+4. TensorFlow. (2024). *TensorFlow Lite for Microcontrollers*. Truy cập từ: https://www.tensorflow.org/lite/microcontrollers
+5. Timon, S. (2019). *Post-training integer quantization*. TensorFlow Blog. Truy cập từ: https://www.tensorflow.org/lite/performance/post_training_integer_quant
+6. FastAPI. (2024). *FastAPI Documentation*. Truy cập từ: https://fastapi.tiangolo.com/
+7. OpenCV. (2024). *CLAHE (Contrast Limited Adaptive Histogram Equalization)*. Truy cập từ: https://docs.opencv.org/
+
+---
+
+## PHỤ LỤC — PHÂN CÔNG CÔNG VIỆC
+
+Viết bảng phân công dạng markdown:
+
+| Thành viên | Nhiệm vụ |
+|---|---|
+| [Tên nhóm trưởng] | Firmware ESP32-CAM, thiết kế mạch phần cứng, tích hợp hệ thống |
+| [Tên thành viên 1] | Huấn luyện mô hình CNN (`cnn2d.ipynb`), quantize TFLite |
+| [Tên thành viên 2] | Xây dựng `eye_detector.py`, pipeline EAR/PERCLOS, `test_cam.py` |
+| [Tên thành viên 3] | Xây dựng `drowsy_server.py` FastAPI, AlertManager, tích hợp server |
+
+---
+
+*Hết prompt — Copilot hãy viết toàn bộ file .md dựa trên mô tả trên, giữ đúng cấu trúc heading và không thêm nội dung ngoài phạm vi đã mô tả.*

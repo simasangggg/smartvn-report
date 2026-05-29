@@ -1909,3 +1909,630 @@ Chiến lược xóa cache trong hệ thống:
 | Restart Redis | Tất cả | Mất toàn bộ cache |
 
 Hệ thống sử dụng kết hợp TTL-based eviction (tự động hết hạn) và event-based eviction (xóa khi dữ liệu thay đổi) để đảm bảo tính fresh của dữ liệu.
+
+\newpage
+
+# HIỆN THỰC HỆ THỐNG
+
+Chương này trình bày quá trình triển khai và hiện thực hóa hệ thống SmartVN, bao gồm cấu hình Docker Compose, cài đặt từng microservice, triển khai frontend và demo các chức năng chính.
+
+## Triển khai với Docker Compose
+
+### Cấu hình các container
+
+Toàn bộ hệ thống được đóng gói và triển khai bằng Docker Compose. File `docker-compose.yml` định nghĩa 9 services, 1 network bridge và 1 volume persistent.
+
+![Sơ đồ Docker Compose deployment](images/docker-deployment.png){#fig:docker-deploy width=90%}
+
+: Danh sách các Docker container {#tbl:docker-containers}
+
+| Container | Image | Port | Depends On |
+|---|---|---|---|
+| techshop-mysql | mysql:8.0 | 3306 | — |
+| techshop-redis | redis:7-alpine | 6379 | — |
+| discovery-service | eureka-server | 8761 | — |
+| config-server | config-server | 8888 | discovery-service |
+| user-service | user-service | 8081 | mysql-db, discovery, config |
+| product-service | product-service | 8082 | mysql-db, discovery, config, redis |
+| order-service | order-service | 8083 | mysql-db, discovery, config, user, product |
+| admin-service | admin-service | 8084 | mysql-db, discovery, config, user, product, order |
+| api-gateway | api-gateway | 8080 | discovery, config, all services |
+| customer-frontend | smartvn-frontend | 5173 | — |
+| admin-frontend | admin-smartVN | 5174 | — |
+
+### Health checks & dependency ordering
+
+Mỗi service đều được cấu hình health check để Docker Compose có thể xác định trạng thái sẵn sàng trước khi khởi động service phụ thuộc.
+
+**Health check cho MySQL:**
+
+```yaml
+mysql-db:
+  image: mysql:8.0
+  healthcheck:
+    test: ["CMD", "mysqladmin", "ping", "-h", "localhost", 
+           "-u", "root", "-prootpassword"]
+    interval: 10s
+    timeout: 5s
+    retries: 10
+    start_period: 30s
+```
+
+**Health check cho Spring Boot services:**
+
+```yaml
+user-service:
+  healthcheck:
+    test: ["CMD", "wget", "--no-verbose", "--tries=1", 
+           "--spider", "http://localhost:8081/actuator/health"]
+    interval: 10s
+    timeout: 5s
+    retries: 10
+    start_period: 30s
+```
+
+**Dependency ordering với condition:**
+
+```yaml
+user-service:
+  depends_on:
+    mysql-db:
+      condition: service_healthy
+    discovery-service:
+      condition: service_healthy
+    config-server:
+      condition: service_healthy
+```
+
+### Service start order
+
+Thứ tự khởi động của hệ thống được quản lý tự động bởi Docker Compose thông qua dependency và health check:
+
+![Thứ tự khởi động các service](images/startup-order.png){#fig:startup-order width=85%}
+
+Thứ tự khởi động như thể hiện trong @fig:startup-order:
+
+- **Giai đoạn 1:** MySQL + Redis (database và cache).
+- **Giai đoạn 2:** Eureka Server (service discovery).
+- **Giai đoạn 3:** Config Server (cấu hình tập trung).
+- **Giai đoạn 4:** User Service → Product Service → Order Service → Admin Service (business services theo dependency).
+- **Giai đoạn 5:** API Gateway (entry point).
+- **Giai đoạn 6:** Customer Frontend + Admin Frontend.
+
+Lệnh khởi động toàn bộ hệ thống:
+
+```bash
+# Clone repository
+git clone https://github.com/simasangggg/smartvn-microservices.git
+cd smartvn-microservices
+
+# Set Git SSH key cho Config Server
+export GIT_SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa)"
+
+# Khởi động toàn bộ hệ thống
+docker compose up -d
+
+# Theo dõi logs
+docker compose logs -f api-gateway
+
+# Kiểm tra trạng thái
+docker compose ps
+```
+
+## Cài đặt & cấu hình
+
+### Eureka Server
+
+Eureka Server là dịch vụ registry đầu tiên cần khởi động. Cấu hình đơn giản với Spring Boot.
+
+**pom.xml dependencies:**
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+</dependency>
+```
+
+**application.yml:**
+
+```yaml
+server:
+  port: 8761
+
+spring:
+  application:
+    name: discovery-service
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    enable-self-preservation: true
+    eviction-interval-timer-in-ms: 60000
+```
+
+**Main class:**
+
+```java
+@SpringBootApplication
+@EnableEurekaServer
+public class EurekaServerApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(
+            EurekaServerApplication.class, args);
+    }
+}
+```
+
+Sau khi khởi động, Eureka Dashboard có thể truy cập tại `http://localhost:8761`.
+
+### Config Server
+
+Config Server quản lý cấu hình tập trung từ Git repository.
+
+**pom.xml dependencies:**
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-config-server</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+</dependency>
+```
+
+**bootstrap.yml:**
+
+```yaml
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/simasangggg/config-repo.git
+          default-label: main
+          clone-on-start: true
+          skip-ssl-validation: true
+        native:
+          search-locations: classpath:/configs
+```
+
+**application.yml:**
+
+```yaml
+server:
+  port: 8888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+```
+
+### API Gateway
+
+API Gateway là điểm vào duy nhất, xử lý routing, JWT validation và CORS.
+
+**pom.xml dependencies:**
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-gateway</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-api</artifactId>
+</dependency>
+```
+
+**SecurityConfig:**
+
+```java
+@Configuration
+@EnableWebFluxSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityWebFilterChain securityWebFilterChain(
+            ServerHttpSecurity http) {
+        return http
+            .csrf(ServerHttpSecurity.CsrfSpec::disable)
+            .authorizeExchange(exchanges -> exchanges
+                .pathMatchers("/oauth2/**", "/login/oauth2/**")
+                    .permitAll()
+                .pathMatchers("/api/v1/auth/**")
+                    .permitAll()
+                .pathMatchers("/api/v1/payment/vnpay/callback")
+                    .permitAll()
+                .pathMatchers("/api/v1/internal/**")
+                    .permitAll()
+                .anyExchange().authenticated()
+            )
+            .addFilterBefore(authenticationFilter, 
+                SecurityWebFiltersOrder.AUTHENTICATION)
+            .build();
+    }
+}
+```
+
+### User Service
+
+User Service xử lý xác thực và quản lý người dùng.
+
+**SecurityConfig cho User Service:**
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) 
+            throws Exception {
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/auth/register").permitAll()
+                .requestMatchers("/oauth2/**").permitAll()
+                .requestMatchers("/internal/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorization -> 
+                    authorization.baseUri("/oauth2/authorization"))
+                .redirectionEndpoint(redirection -> 
+                    redirection.baseUri(
+                        "/login/oauth2/code/*"))
+                .userInfoEndpoint(userInfo -> 
+                    userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2AuthenticationSuccessHandler)
+            )
+            .sessionManagement(session -> 
+                session.sessionCreationPolicy(
+                    SessionCreationPolicy.STATELESS))
+            .addFilterBefore(jwtAuthenticationFilter, 
+                UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(exception -> 
+                exception.authenticationEntryPoint(
+                    jwtAuthenticationEntryPoint))
+            .build();
+        return http.getOrBuild();
+    }
+}
+```
+
+### Product Service (với Redis caching)
+
+Product Service tích hợp Redis cache để cải thiện hiệu năng.
+
+**RedisConfig:**
+
+```java
+@Configuration
+@EnableCaching
+public class RedisConfig {
+
+    @Bean
+    public LettuceConnectionFactory redisConnectionFactory() {
+        return new LettuceConnectionFactory(
+            new RedisStandaloneConfiguration(
+                "techshop-redis", 6379));
+    }
+
+    @Bean
+    public RedisCacheManager cacheManager(
+            LettuceConnectionFactory factory) {
+        
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.setSerializationInclusion(
+            JsonInclude.Include.NON_NULL);
+
+        GenericJackson2JsonRedisSerializer serializer = 
+            new GenericJackson2JsonRedisSerializer(mapper);
+
+        RedisCacheConfiguration defaultConfig = 
+            RedisCacheConfiguration.defaultCacheConfig()
+                .serializeValuesWith(
+                    RedisSerializationContext.SerializationPair
+                        .fromSerializer(serializer))
+                .disableCachingNullValues();
+
+        Map<String, RedisCacheConfiguration> configs = 
+            Map.of(
+                "productDetail", 
+                    defaultConfig.entryTtl(
+                        Duration.ofMinutes(10)),
+                "categories", 
+                    defaultConfig.entryTtl(
+                        Duration.ofHours(1))
+            );
+
+        return RedisCacheManager.builder(factory)
+            .cacheDefaults(defaultConfig)
+            .withInitialCacheConfigurations(configs)
+            .build();
+    }
+}
+```
+
+### Order Service
+
+Order Service tích hợp VNPay payment gateway.
+
+**PaymentService:**
+
+```java
+@Service
+@Slf4j
+public class PaymentService {
+
+    @Value("${vnpay.tmn-code}")
+    private String vnpTmnCode;
+
+    @Value("${vnpay.hash-secret}")
+    private String vnpHashSecret;
+
+    @Value("${vnpay.pay-url}")
+    private String vnpPayUrl;
+
+    @Value("${vnpay.return-url}")
+    private String vnpReturnUrl;
+
+    public String createPaymentUrl(Order order, 
+            HttpServletRequest request) {
+        Map<String, String> params = new TreeMap<>();
+        params.put("vnp_Version", "2.1.0");
+        params.put("vnp_Command", "pay");
+        params.put("vnp_TmnCode", vnpTmnCode);
+        params.put("vnp_Amount", String.valueOf(
+            order.getTotalPrice()
+                .multiply(BigDecimal.valueOf(100))
+                .longValue()));
+        params.put("vnp_CurrCode", "VND");
+        params.put("vnp_TxnCode", 
+            String.valueOf(order.getId()));
+        params.put("vnp_OrderInfo", 
+            "Thanh toan don hang #" + order.getId());
+        params.put("vnp_OrderType", "other");
+        params.put("vnp_Locale", "vn");
+        params.put("vnp_ReturnUrl", vnpReturnUrl);
+        params.put("vnp_IpAddr", 
+            getClientIpAddress(request));
+        params.put("vnp_CreateDate", 
+            new SimpleDateFormat("yyyyMMddHHmmss")
+                .format(new Date()));
+
+        String hashData = buildHashData(params);
+        String secureHash = hmacSHA512(
+            vnpHashSecret, hashData);
+        params.put("vnp_SecureHash", secureHash);
+
+        return buildUrl(vnpPayUrl, params);
+    }
+
+    public boolean validateCallback(
+            Map<String, String> params) {
+        String secureHash = params.get("vnp_SecureHash");
+        params.remove("vnp_SecureHash");
+        params.remove("vnp_SecureHashType");
+
+        String hashData = buildHashData(params);
+        String computedHash = hmacSHA512(
+            vnpHashSecret, hashData);
+        
+        return secureHash.equals(computedHash);
+    }
+}
+```
+
+### Admin Service
+
+Admin Service sử dụng Circuit Breaker cho tất cả cuộc gọi đi.
+
+**Cấu hình Resilience4j:**
+
+```yaml
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        registerHealthIndicator: true
+      productService:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+      orderService:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+  retry:
+    instances:
+      userService:
+        maxAttempts: 3
+        waitDuration: 1s
+        retryExceptions:
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+      productService:
+        maxAttempts: 3
+        waitDuration: 1s
+      orderService:
+        maxAttempts: 3
+        waitDuration: 1s
+```
+
+## Triển khai Frontend
+
+### Customer Frontend (React)
+
+Customer Frontend là ứng dụng React được build và deploy qua Docker.
+
+**Dockerfile:**
+
+```dockerfile
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+**nginx.conf:**
+
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api {
+        proxy_pass http://api-gateway:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+### Admin Frontend (React)
+
+Admin Frontend tương tự Customer Frontend nhưng với giao diện quản trị.
+
+**Cấu trúc thư mục:**
+
+```
+admin-smartVN/
+├── src/
+│   ├── components/
+│   │   ├── Dashboard/
+│   │   ├── Products/
+│   │   ├── Orders/
+│   │   └── Users/
+│   ├── pages/
+│   ├── services/
+│   │   └── api.js
+│   ├── App.jsx
+│   └── main.jsx
+├── public/
+├── Dockerfile
+├── nginx.conf
+└── package.json
+```
+
+## Demo hệ thống
+
+### Đăng ký/Đăng nhập
+
+**Trang đăng ký:**
+
+![Giao diện đăng ký tài khoản](images/demo-register.png){#fig:demo-register width=80%}
+
+Quy trình đăng ký:
+
+- Người dùng nhập email, mật khẩu, họ tên.
+- Hệ thống gửi OTP đến email.
+- Người dùng nhập OTP để xác thực.
+- Tài khoản được tạo thành công.
+
+**Trang đăng nhập:**
+
+![Giao diện đăng nhập](images/demo-login.png){#fig:demo-login width=80%}
+
+Hỗ trợ 3 phương thức đăng nhập:
+
+- Email + Mật khẩu.
+- Đăng nhập bằng Google (OAuth2).
+- Đăng nhập bằng GitHub (OAuth2).
+
+### OAuth2 Login
+
+![Luồng đăng nhập OAuth2 với Google](images/demo-oauth2.png){#fig:demo-oauth2 width=85%}
+
+Khi người dùng chọn "Đăng nhập bằng Google":
+
+- Frontend chuyển hướng đến `/oauth2/authorization/google`.
+- API Gateway chuyển tiếp đến User Service.
+- User Service chuyển hướng đến Google.
+- Người dùng xác nhận trên Google.
+- Google callback về User Service.
+- User Service tạo JWT và redirect về frontend.
+
+### Duyệt sản phẩm
+
+![Giao diện danh sách sản phẩm](images/demo-products.png){#fig:demo-products width=80%}
+
+Trang sản phẩm hỗ trợ:
+
+- Hiển thị danh sách sản phẩm với phân trang.
+- Lọc theo danh mục, khoảng giá, thương hiệu.
+- Sắp xếp theo giá, độ phổ biến, đánh giá.
+- Tìm kiếm theo từ khóa.
+
+### Giỏ hàng & Đặt hàng
+
+![Giao diện giỏ hàng](images/demo-cart.png){#fig:demo-cart width=80%}
+
+Quy trình đặt hàng:
+
+- Người dùng thêm sản phẩm vào giỏ hàng.
+- Kiểm tra tồn kho tự động.
+- Chọn địa chỉ giao hàng.
+- Xác nhận đơn hàng.
+- Chọn phương thức thanh toán.
+
+### Thanh toán VNPay
+
+![Giao diện thanh toán VNPay](images/demo-vnpay.png){#fig:demo-vnpay width=85%}
+
+Quy trình thanh toán:
+
+- Người dùng chọn "Thanh toán qua VNPay".
+- Backend tạo URL thanh toán VNPay.
+- Frontend chuyển hướng đến VNPay.
+- Người dùng chọn ngân hàng và xác nhận.
+- VNPay callback về backend.
+- Backend cập nhật trạng thái đơn hàng.
+- Frontend hiển thị kết quả thanh toán.
+
+### Admin Dashboard
+
+![Giao diện Admin Dashboard](images/demo-dashboard.png){#fig:demo-dashboard width=85%}
+
+Dashboard cung cấp cái nhìn tổng quan về hệ thống:
+
+- Thống kê tổng quan: tổng người dùng, sản phẩm, đơn hàng, doanh thu.
+- Biểu đồ doanh revenue theo thời gian.
+- Top sản phẩm bán chạy.
+- Đơn hàng gần đây.
+- Trạng thái các service (healthy/unhealthy).

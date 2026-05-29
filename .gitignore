@@ -1,6 +1,7 @@
 # Output files
 *.docx
 !template.docx
+!bao-cao.docx
 *.pdf
 !slides/ocr-presentation-styled.pdf
 

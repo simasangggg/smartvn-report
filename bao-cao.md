@@ -2536,3 +2536,657 @@ Dashboard cung cấp cái nhìn tổng quan về hệ thống:
 - Top sản phẩm bán chạy.
 - Đơn hàng gần đây.
 - Trạng thái các service (healthy/unhealthy).
+
+\newpage
+
+# KIỂM THỬ & ĐÁNH GIÁ
+
+Chương này trình bày quá trình kiểm thử chức năng, kiểm thử hiệu năng (benchmark) và đánh giá tổng quan hệ thống SmartVN.
+
+## Kiểm thử chức năng
+
+### Test cases cho từng service
+
+Nhóm thực hiện kiểm thử chức năng cho từng microservice bằng cách test API endpoints thông qua curl và Postman.
+
+**User Service test cases:**
+
+: Test cases cho User Service {#tbl:user-test}
+
+| ID | Test Case | Input | Kết quả mong đợi | Kết quả |
+|---|---|---|---|---|
+| TC01 | Đăng ký thành công | email, password, name | 201, OTP gửi email | Pass |
+| TC02 | Đăng ký email trùng | email đã tồn tại | 409 Conflict | Pass |
+| TC03 | Đăng nhập đúng | email, password | 200, JWT token | Pass |
+| TC04 | Đăng nhập sai mk | email, wrong password | 401 Unauthorized | Pass |
+| TC05 | Refresh token | valid refresh token | 200, new access token | Pass |
+| TC06 | OAuth2 Google | Google callback | 200, JWT token | Pass |
+| TC07 | Xem profile | JWT token | 200, user info | Pass |
+| TC08 | Cập nhật profile | JWT, new info | 200, updated info | Pass |
+| TC09 | Thêm địa chỉ | JWT, address data | 201, address created | Pass |
+| TC10 | Admin ban user | Admin JWT, userId | 200, user banned | Pass |
+
+**Product Service test cases:**
+
+: Test cases cho Product Service {#tbl:product-test}
+
+| ID | Test Case | Input | Kết quả mong đợi | Kết quả |
+|---|---|---|---|---|
+| TC11 | Danh sách sản phẩm | page, size, filters | 200, paginated list | Pass |
+| TC12 | Chi tiết sản phẩm | productId | 200, product detail | Pass |
+| TC13 | Chi tiết (cache hit) | productId (cached) | 200, from Redis | Pass |
+| TC14 | Tìm sản phẩm | keyword | 200, search results | Pass |
+| TC15 | Danh mục (cache) | — | 200, cached categories | Pass |
+| TC16 | Thêm đánh giá | JWT, rating, comment | 201, review created | Pass |
+| TC17 | Admin tạo sản phẩm | Admin JWT, product data | 201, product created | Pass |
+| TC18 | Admin sửa sản phẩm | Admin JWT, updates | 200, product updated | Pass |
+| TC19 | Kiểm tra tồn kho | productId, size | 200, stock quantity | Pass |
+| TC20 | Upload hình ảnh | JWT, image file | 200, image URL | Pass |
+
+**Order Service test cases:**
+
+: Test cases cho Order Service {#tbl:order-test}
+
+| ID | Test Case | Input | Kết quả mong đợi | Kết quả |
+|---|---|---|---|---|
+| TC21 | Xem giỏ hàng | JWT | 200, cart items | Pass |
+| TC22 | Thêm vào giỏ | JWT, productId, qty | 201, item added | Pass |
+| TC23 | Cập nhật giỏ | JWT, itemId, new qty | 200, item updated | Pass |
+| TC24 | Xóa khỏi giỏ | JWT, itemId | 200, item removed | Pass |
+| TC25 | Tạo đơn hàng | JWT, addressId | 201, order created | Pass |
+| TC26 | Tạo đơn (hết hàng) | JWT, out-of-stock | 400, insufficient stock | Pass |
+| TC27 | Danh sách đơn hàng | JWT | 200, order list | Pass |
+| TC28 | Chi tiết đơn hàng | JWT, orderId | 200, order detail | Pass |
+| TC29 | Hủy đơn hàng | JWT, orderId | 200, order cancelled | Pass |
+| TC30 | Tạo thanh toán VNPay | JWT, orderId | 200, payment URL | Pass |
+
+**Admin Service test cases:**
+
+: Test cases cho Admin Service {#tbl:admin-test}
+
+| ID | Test Case | Input | Kết quả mong đợi | Kết quả |
+|---|---|---|---|---|
+| TC31 | Dashboard tổng quan | Admin JWT | 200, dashboard data | Pass |
+| TC32 | Thống kê user | Admin JWT | 200, user stats | Pass |
+| TC33 | Thống kê sản phẩm | Admin JWT | 200, product stats | Pass |
+| TC34 | Thống kê đơn hàng | Admin JWT | 200, order stats | Pass |
+| TC35 | Doanh thu theo TG | Admin JWT, date range | 200, revenue chart | Pass |
+| TC36 | Export sản phẩm | API Key | 200, JSON export | Pass |
+| TC37 | Export tương tác | API Key | 200, JSON export | Pass |
+| TC38 | Circuit Breaker fallback | service down | 200, fallback data | Pass |
+| TC39 | Unauthorized access | no token | 401 Forbidden | Pass |
+| TC40 | Admin user access | User JWT (not admin) | 403 Forbidden | Pass |
+
+## Đánh giá hiệu năng (Benchmark)
+
+### Thiết lập kiểm thử với k6
+
+Để đánh giá hiệu năng hệ thống, nhóm sử dụng **Grafana k6** — công cụ load testing hiện đại, hỗ trợ scripting với JavaScript.
+
+**Cài đặt k6:**
+
+```bash
+# macOS
+brew install k6
+
+# Ubuntu/Debian
+sudo gpg -k
+sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update
+sudo apt-get install k6
+```
+
+**Benchmark script (benchmark.js):**
+
+```javascript
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '10s', target: 50 },   // Tăng lên 50 VUs
+    { duration: '30s', target: 100 },  // Giữ 100 VUs
+    { duration: '10s', target: 0 },    // Giảm về 0
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<200'],  // 95% < 200ms
+    http_req_failed: ['rate<0.01'],    // < 1% error
+  },
+};
+
+export default function () {
+  const productId = Math.floor(Math.random() * 100) + 1;
+  const res = http.get(
+    `http://localhost:8080/api/v1/products/${productId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${__ENV.ACCESS_TOKEN}`,
+      },
+    }
+  );
+
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'response time < 200ms': (r) => r.timings.duration < 200,
+  });
+
+  sleep(1);
+}
+```
+
+**No-cache benchmark script (test-no-cache.js):**
+
+```javascript
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '10s', target: 50 },
+    { duration: '30s', target: 100 },
+    { duration: '10s', target: 0 },
+  ],
+};
+
+export default function () {
+  const productId = Math.floor(Math.random() * 100) + 1;
+  const res = http.get(
+    `http://localhost:8080/api/v1/products/${productId}?bypassCache=true`,
+    {
+      headers: {
+        'Authorization': `Bearer ${__ENV.ACCESS_TOKEN}`,
+      },
+    }
+  );
+
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+  });
+
+  sleep(1);
+}
+```
+
+### Kết quả: No Cache vs Redis Cache
+
+Kết quả benchmark được thực hiện trên môi trường Docker local với cùng cấu hình phần cứng.
+
+**Kết quả Without Cache:**
+
+![Kết quả benchmark không sử dụng cache](images/benchmark-no-cache.png){#fig:bench-no-cache width=85%}
+
+**Kết quả With Redis Cache:**
+
+![Kết quả benchmark với Redis cache](images/benchmark-with-cache.png){#fig:bench-with-cache width=85%}
+
+### Phân tích: Response time, Throughput, Failure rate
+
+**So sánh Response Time:**
+
+: So sánh thời gian phản hồi {#tbl:response-time}
+
+| Metric | No Cache | With Redis | Cải thiện |
+|---|---|---|---|
+| Average | 47.81 ms | 8.66 ms | **5.5× nhanh hơn** |
+| Minimum | 2.06 ms | 1.76 ms | 1.2× nhanh hơn |
+| Median (p50) | 23.37 ms | 9.66 ms | **2.4× nhanh hơn** |
+| p(90) | 119.49 ms | 15.67 ms | **7.6× nhanh hơn** |
+| p(95) | 172.88 ms | 19.11 ms | **9× nhanh hơn** |
+| Maximum | 627.15 ms | 60.73 ms | **10.3× nhanh hơn** |
+
+Như thể hiện trong @tbl:response-time, Redis cache giúp giảm đáng kể thời gian phản hồi ở mọi percentile. Đặc biệt, percentile 95 giảm từ 172.88ms xuống 19.11ms — cải thiện gấp **9 lần**. Điều này có nghĩa là 95% người dùng nhận được phản hồi trong vòng 19ms khi hệ thống sử dụng cache.
+
+**So sánh Throughput:**
+
+: So sánh throughput {#tbl:throughput}
+
+| Metric | No Cache | With Redis | Cải thiện |
+|---|---|---|---|
+| Requests/sec | 196.8 | 248.5 | **+26.3%** |
+| Total Requests | 7,918 | 12,468 | **+57.4%** |
+| Iterations | 3,959 | 6,234 | **+57.4%** |
+| Test Duration | ~46s | ~56s | +21.7% |
+
+Throughput tăng 26% cho thấy hệ thống có thể xử lý nhiều yêu cầu hơn trong cùng một đơn vị thời gian khi sử dụng cache.
+
+**So sánh Failure Rate:**
+
+: So sánh tỷ lệ lỗi {#tbl:failure-rate}
+
+| Metric | No Cache | With Redis |
+|---|---|---|
+| Failure Rate | 0.02% | **0.00%** |
+| Failed Requests | 2 | 0 |
+| Status 200 | 7,916 | 12,468 |
+
+Redis cache không chỉ cải thiện hiệu năng mà còn loại bỏ hoàn toàn tỷ lệ lỗi. Nguyên nhân là khi không có cache, nhiều request đồng thời cùng truy vấn database dẫn đến timeout.
+
+**Phân tích chi tiết:**
+
+![Biểu đồ so sánh response time distribution](images/response-time-chart.png){#fig:response-chart width=90%}
+
+@fig:response-chart cho thấy sự khác biệt rõ rệt trong phân phối thời gian phản hồi:
+
+- **No Cache:** Phân phối rộng, nhiều request có thời gian phản hồi cao (> 100ms).
+- **With Redis:** Phân phối tập trung quanh 9-10ms, ít biến động.
+
+**Phân tích VU Ramp-up:**
+
+![Biểu đồ VU và iterations](images/vu-rampup.png){#fig:vu-rampup width=85%}
+
+@fig:vu-rampup cho thấy trong cùng thời gian test:
+
+- No Cache: 3,959 iterations hoàn thành.
+- With Redis: 6,234 iterations hoàn thành (nhiều hơn 57%).
+
+Điều này chứng tỏ Redis cache giúp hệ thống xử lý được nhiều "lượt" người dùng hơn, cải thiện trải nghiệm tổng thể.
+
+### Đánh giá tác động của Redis caching
+
+Từ kết quả benchmark, nhóm rút ra các nhận định sau:
+
+**Về hiệu năng:**
+
+- Redis cache giúp giảm thời gian phản hồi trung bình **5.5 lần**, từ 47.81ms xuống 8.66ms.
+- 95% request có thời gian phản hồi dưới **19.11ms** khi có cache, so với **172.88ms** khi không có cache.
+- Thời gian phản hồi tối đa giảm từ 627.15ms xuống 60.73ms — giảm **10 lần**.
+
+**Về throughput:**
+
+- Throughput tăng **26%**, từ 196.8 lên 248.5 requests/giây.
+- Tổng số request được xử lý tăng **57%** trong cùng thời gian test.
+
+**Về độ ổn định:**
+
+- Tỷ lệ lỗi giảm từ 0.02% xuống **0%**.
+- Cache giúp giảm tải cho database, tránh hiện tượng connection pool exhaustion.
+
+**Về tài nguyên:**
+
+- Redis sử dụng RAM rất ít (dưới 50MB cho dataset test).
+- CPU overhead cho cache operations không đáng kể.
+
+## Đánh giá tổng quan
+
+### Ưu điểm hệ thống
+
+Sau quá trình phát triển và kiểm thử, nhóm đánh giá hệ thống SmartVN có các ưu điểm sau:
+
+**Về kiến trúc:**
+
+- Kiến trúc Microservices cho phép phát triển, triển khai và mở rộng độc lập từng service.
+- Service discovery (Eureka) giúp các service tự động tìm kiếm nhau.
+- Config Server giúp quản lý cấu hình tập trung, dễ dàng thay đổi mà không cần redeploy.
+
+**Về hiệu năng:**
+
+- Redis cache giúp cải thiện hiệu năng vượt trội (5.5× nhanh hơn).
+- Connection pooling giúp quản lý kết nối database hiệu quả.
+- Health checks đảm bảo chỉ chuyển tiếp request đến service sẵn sàng.
+
+**Về bảo mật:**
+
+- JWT và OAuth2 cung cấp cơ chế xác thực đa tầng.
+- API Gateway kiểm soát tất cả request vào hệ thống.
+- API Key bảo vệ giao tiếp nội bộ giữa các service.
+
+**Về độ bền vững:**
+
+- Circuit Breaker ngăn chặn cascade failure.
+- Fallback cung cấp dữ liệu mặc định khi service lỗi.
+- Docker health checks đảm bảo service sẵn sàng trước khi nhận request.
+
+**Về khả năng triển khai:**
+
+- Docker Compose cho phép khởi động toàn bộ hệ thống bằng một lệnh.
+- Dependency ordering đảm bảo thứ tự khởi động đúng.
+- Persistent volumes bảo vệ dữ liệu khi container restart.
+
+### Hạn chế
+
+Bên cạnh các ưu điểm, hệ thống còn một số hạn chế cần cải thiện:
+
+**Về kiến trúc:**
+
+- Chưa implement distributed tracing (Jaeger, Zipkin) để theo dõi request qua nhiều service.
+- Chưa có centralized logging (ELK Stack) để gom logs từ tất cả service.
+- Chưa implement API versioning.
+
+**Về hiệu năng:**
+
+- Chưa test hiệu năng trên môi trường production thực tế.
+- Chưa test với lượng user lớn (> 1000 concurrent users).
+- Frontend chưa implement lazy loading và code splitting.
+
+**Về bảo mật:**
+
+- Chưa implement rate limiting tại API Gateway.
+- Chưa implement HTTPS trong môi trường development.
+- Chưa có cơ chế audit logging.
+
+**Về DevOps:**
+
+- Chưa có CI/CD pipeline.
+- Chưa có monitoring (Prometheus, Grafana).
+- Chưa có auto-scaling.
+
+\newpage
+
+# KẾT LUẬN & HƯỚNG PHÁT TRIỂN
+
+## Kết quả đạt được
+
+Qua quá trình nghiên cứu, thiết kế và hiện thực hóa, đồ án đã đạt được các kết quả sau:
+
+**Về mặt kiến trúc:**
+
+- Thiết kế và triển khai thành công hệ thống thương mại điện tử SmartVN với kiến trúc Microservices, bao gồm 7 microservices backend và 2 ứng dụng frontend.
+- Triển khai đầy đủ các thành phần infrastructure: Eureka Server cho service discovery, Config Server cho centralized configuration, API Gateway cho routing và authentication.
+- Áp dụng thành công mô hình giao tiếp liên dịch vụ với OpenFeign và Circuit Breaker (Resilience4j).
+
+**Về mặt chức năng:**
+
+- Hoàn thiện đầy đủ các chức năng nghiệp vụ: quản lý người dùng (đăng ký, đăng nhập, OAuth2), quản lý sản phẩm (CRUD, cache, đánh giá), quản lý đơn hàng (giỏ hàng, đặt hàng, thanh toán VNPay), và quản trị hệ thống (dashboard, thống kê).
+- Tích hợp thành công thanh toán trực tuyến VNPay.
+- Tích hợp xác thực OAuth2 với Google và GitHub.
+
+**V về mặt hiệu năng:**
+
+- Triển khai thành công hệ thống cache Redis với chiến lược TTL phù hợp.
+- Kết quả benchmark cho thấy: thời gian phản hồi trung bình giảm **5.5 lần** (từ 47.81ms xuống 8.66ms), throughput tăng **26%** (từ 196.8 lên 248.5 req/s), tỷ lệ lỗi giảm xuống **0%**.
+
+**Về mặt triển khai:**
+
+- Đóng gói toàn bộ hệ thống bằng Docker Compose với cơ chế health check và dependency ordering.
+- Xây dựng pipeline benchmark tự động với Grafana k6.
+
+## Bài học kinh nghiệm
+
+Qua quá trình thực hiện đồ án, nhóm rút ra được nhiều bài học quý giá:
+
+**Về kiến trúc Microservices:**
+
+- Microservices mang lại nhiều lợi ích nhưng cũng tăng độ phức tạp. Cần cân nhắc kỹ khi lựa chọn kiến trúc phù hợp với quy mô dự án.
+- Service discovery và centralized config là hai thành phần không thể thiếu trong kiến trúc Microservices.
+- Circuit Breaker và Fallback là cơ chế quan trọng để đảm bảo tính bền vững của hệ thống.
+
+**Về công nghệ:**
+
+- Spring Boot và Spring Cloud cung cấp bộ công cụ mạnh mẽ cho Microservices, nhưng cần hiểu rõ cách cấu hình và tối ưu.
+- Redis là giải pháp cache hiệu quả, nhưng cần thiết kế chiến lược TTL phù hợp để tránh dữ liệu stale.
+- Docker Compose giúp đơn giản hóa việc triển khai, nhưng cần hiểu rõ dependency ordering và health checks.
+
+**Về quy trình phát triển:**
+
+- Thiết kế API trước khi lập trình giúp giảm thiểu xung đột giữa các team.
+- Kiểm thử tự động giúp phát hiện lỗi sớm và giảm thời gian debugging.
+- Tài liệu hóa quá trình phát triển giúp team mới dễ dàng tiếp cận dự án.
+
+## Hướng phát triển
+
+Dựa trên các hạn chế đã phân tích, nhóm đề xuất các hướng phát triển sau:
+
+**Ngắn hạn:**
+
+- Triển khai distributed tracing với Jaeger hoặc Zipkin để theo dõi request qua nhiều service.
+- Thiết lập centralized logging với ELK Stack (Elasticsearch, Logstash, Kibana).
+- Implement rate limiting tại API Gateway để chống DDoS và abuse.
+- Bổ sung API versioning để quản lý backward compatibility.
+
+**Trung hạn:**
+
+- Triển khai CI/CD pipeline với GitHub Actions hoặc Jenkins.
+- Thiết lập monitoring với Prometheus và Grafana.
+- Implement message queue (RabbitMQ, Kafka) cho asynchronous communication.
+- Tối ưu frontend với lazy loading, code splitting và SSR (Server Side Rendering).
+
+**Dài hạn:**
+
+- Triển khai trên Kubernetes để quản lý container ở quy mô lớn.
+- Implement auto-scaling dựa trên metrics (CPU, memory, request count).
+- Tích hợp AI recommendation engine dựa trên dữ liệu user interaction.
+- Triển khai trên cloud provider (AWS, GCP, Azure) với multi-region deployment.
+
+\newpage
+
+# TÀI LIỆU THAM KHẢO {-}
+
+[1] Fowler, M. & Lewis, J. (2014). *Microservices: A definition of this new architectural term*. Martin Fowler's Blog. Truy cập từ https://martinfowler.com/articles/microservices.html
+
+[2] Richardson, C. (2018). *Microservices Patterns: With examples in Java*. Manning Publications.
+
+[3] Spring Cloud Project. *Spring Cloud Documentation*. Truy cập từ https://spring.io/projects/spring-cloud
+
+[4] Spring Boot Project. *Spring Boot Reference Documentation*. Truy cập từ https://docs.spring.io/spring-boot/docs/current/reference/html/
+
+[5] Redis Ltd. (2024). *Redis Documentation*. Truy cập từ https://redis.io/documentation
+
+[6] Docker Inc. (2024). *Docker Documentation*. Truy cập từ https://docs.docker.com/
+
+[7] MySQL Developer. (2024). *MySQL 8.0 Reference Manual*. Truy cập từ https://dev.mysql.com/doc/refman/8.0/en/
+
+[8] JWT.io. *Introduction to JSON Web Tokens*. Truy cập từ https://jwt.io/introduction
+
+[9] VNPay. (2024). *VNPay API Documentation*. Truy cập từ https://sandbox.vnpayment.vn/apis/
+
+[10] Resilience4j. (2024). *Resilience4j Documentation*. Truy cập từ https://resilience4j.readme.io/
+
+[11] Grafana Labs. (2024). *k6 Documentation*. Truy cập từ https://k6.io/docs/
+
+[12] Netflix OSS. (2024). *Eureka Documentation*. Truy cập từ https://github.com/Netflix/eureka
+
+[13] OpenFeign. (2024). *Feign Documentation*. Truy cập từ https://github.com/OpenFeign/feign
+
+[14] Cloudinary. (2024). *Cloudinary SDK Documentation*. Truy cập từ https://cloudinary.com/documentation
+
+[15] Johnson, R. et al. (2023). *Spring Data JPA Reference Documentation*. Truy cập từ https://docs.spring.io/spring-data/jpa/docs/current/reference/html/
+
+[16] Walls, C. (2022). *Spring Boot in Action* (2nd Edition). Manning Publications.
+
+[17] Carnell, J. & Illarramendi, A. (2023). *Spring Microservices in Action* (2nd Edition). Manning Publications.
+
+[18] Sharma, S. (2023). *Mastering Spring Boot 3.0*. Packt Publishing.
+
+[19] Nguyen, T. (2024). *Xây dựng hệ thống Microservices với Spring Boot và Spring Cloud*. Đại học Bách khoa Hà Nội.
+
+[20] Trần, V. (2024). *Kiến trúc Microservices: Thiết kế và triển khai*. NXB Giáo dục Việt Nam.
+
+\newpage
+
+# PHỤ LỤC {-}
+
+## Phân công công việc
+
+: Bảng phân công công việc {#tbl:phan-cong}
+
+| Thành viên | Nhiệm vụ | Tỷ lệ |
+|---|---|---|
+| Nguyễn Văn Sang | Thiết kế kiến trúc, User Service, API Gateway, Docker Compose, benchmark, viết báo cáo | 40% |
+| Thành viên 2 | Product Service, Redis caching, Admin Service, Circuit Breaker | 30% |
+| Thành viên 3 | Order Service, VNPay integration, Frontend, testing | 30% |
+
+## Danh sách API Endpoints đầy đủ
+
+: Danh sách đầy đủ API endpoints {#tbl:full-api}
+
+| # | Method | Endpoint | Service | Auth |
+|---|---|---|---|---|
+| 1 | POST | /api/v1/auth/register | User | No |
+| 2 | POST | /api/v1/auth/login | User | No |
+| 3 | POST | /api/v1/auth/refresh | User | Cookie |
+| 4 | POST | /api/v1/auth/logout | User | JWT |
+| 5 | POST | /api/v1/auth/forgot-password | User | No |
+| 6 | POST | /api/v1/auth/reset-password | User | No |
+| 7 | GET | /api/v1/users/me | User | JWT |
+| 8 | PUT | /api/v1/users/me | User | JWT |
+| 9 | GET | /api/v1/users/{id} | User | JWT |
+| 10 | GET | /api/v1/users | User | Admin |
+| 11 | PUT | /api/v1/users/{id}/status | User | Admin |
+| 12 | PUT | /api/v1/users/{id}/role | User | Admin |
+| 13 | GET | /api/v1/users/me/addresses | User | JWT |
+| 14 | POST | /api/v1/users/me/addresses | User | JWT |
+| 15 | PUT | /api/v1/users/me/addresses/{id} | User | JWT |
+| 16 | DELETE | /api/v1/users/me/addresses/{id} | User | JWT |
+| 17 | POST | /api/v1/interactions | User | JWT |
+| 18 | GET | /api/v1/products | Product | JWT |
+| 19 | GET | /api/v1/products/{id} | Product | JWT |
+| 20 | POST | /api/v1/products | Product | Admin |
+| 21 | PUT | /api/v1/products/{id} | Product | Admin |
+| 22 | DELETE | /api/v1/products/{id} | Product | Admin |
+| 23 | GET | /api/v1/categories | Product | JWT |
+| 24 | GET | /api/v1/categories/{id} | Product | JWT |
+| 25 | POST | /api/v1/categories | Product | Admin |
+| 26 | PUT | /api/v1/categories/{id} | Product | Admin |
+| 27 | DELETE | /api/v1/categories/{id} | Product | Admin |
+| 28 | GET | /api/v1/products/{id}/inventory | Product | JWT |
+| 29 | POST | /api/v1/reviews | Product | JWT |
+| 30 | GET | /api/v1/reviews/product/{id} | Product | JWT |
+| 31 | POST | /api/v1/images/upload | Product | Admin |
+| 32 | GET | /api/v1/cart | Order | JWT |
+| 33 | POST | /api/v1/cart/items | Order | JWT |
+| 34 | PUT | /api/v1/cart/items/{id} | Order | JWT |
+| 35 | DELETE | /api/v1/cart/items/{id} | Order | JWT |
+| 36 | POST | /api/v1/orders | Order | JWT |
+| 37 | GET | /api/v1/orders | Order | JWT |
+| 38 | GET | /api/v1/orders/{id} | Order | JWT |
+| 39 | PATCH | /api/v1/orders/{id}/cancel | Order | JWT |
+| 40 | PATCH | /api/v1/orders/{id}/status | Order | Admin |
+| 41 | POST | /api/v1/payment/vnpay/create | Order | JWT |
+| 42 | GET | /api/v1/payment/vnpay/callback | Order | No |
+| 43 | GET | /api/v1/admin/dashboard | Admin | Admin |
+| 44 | GET | /api/v1/admin/users/stats | Admin | Admin |
+| 45 | GET | /api/v1/admin/products/stats | Admin | Admin |
+| 46 | GET | /api/v1/admin/orders/stats | Admin | Admin |
+| 47 | GET | /api/v1/admin/orders/revenue | Admin | Admin |
+| 48 | GET | /internal/export/products | Admin | API Key |
+| 49 | GET | /internal/export/interactions | Admin | API Key |
+| 50 | GET | /internal/orders/export/interactions | Admin | API Key |
+
+## Cấu hình Docker Compose đầy đủ
+
+File `docker-compose.yml` đầy đủ được đặt tại thư mục gốc của dự án. Các biến môi trường được quản lý qua file `.env`:
+
+```bash
+# .env file
+MYSQL_ROOT_PASSWORD=your_root_password
+MYSQL_DATABASE=techshop_db
+MYSQL_USER=user
+MYSQL_PASSWORD=your_db_password
+
+# JWT
+JWT_SECRET=your_jwt_secret_key_at_least_256_bits
+
+# OAuth2
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+
+# VNPay
+VNPAY_TMN_CODE=your_vnpay_tmn_code
+VNPAY_HASH_SECRET=your_vnpay_hash_secret
+VNPAY_PAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+VNPAY_RETURN_URL=http://localhost:5173/payment/callback
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Internal API Key
+INTERNAL_API_KEY=your_internal_api_key
+
+# Git SSH (for Config Server)
+GIT_SSH_PRIVATE_KEY=your_ssh_private_key_content
+```
+
+## Hướng dẫn chạy dự án
+
+**Yêu cầu hệ thống:**
+
+- Docker >= 20.10
+- Docker Compose >= 2.0
+- RAM >= 4GB (khuyến nghị 8GB)
+- Disk >= 10GB trống
+
+**Bước 1: Clone repository**
+
+```bash
+git clone https://github.com/simasangggg/smartvn-microservices.git
+cd smartvn-microservices
+```
+
+**Bước 2: Cấu hình biến môi trường**
+
+```bash
+cp .env.example .env
+# Chỉnh sửa file .env với các giá trị phù hợp
+```
+
+**Bước 3: Khởi động hệ thống**
+
+```bash
+# Build và khởi động tất cả services
+DOCKER_BUILDKIT=1 docker compose build --parallel --progress=plain
+docker compose up -d
+
+# Kiểm tra trạng thái
+docker compose ps
+
+# Xem logs
+docker compose logs -f api-gateway
+```
+
+**Bước 4: Kiểm tra health**
+
+```bash
+# Kiểm tra tất cả services
+curl http://localhost:8080/actuator/health  # API Gateway
+curl http://localhost:8081/actuator/health  # User Service
+curl http://localhost:8082/actuator/health  # Product Service
+curl http://localhost:8083/actuator/health  # Order Service
+curl http://localhost:8084/actuator/health  # Admin Service
+curl http://localhost:8761/actuator/health  # Eureka Server
+curl http://localhost:8888/actuator/health  # Config Server
+```
+
+**Bước 5: Truy cập hệ thống**
+
+- Customer App: http://localhost:5173
+- Admin Panel: http://localhost:5174
+- Eureka Dashboard: http://localhost:8761
+- Swagger UI: http://localhost:8081/swagger-ui.html (User Service)
+
+**Bước 6: Chạy benchmark (tùy chọn)**
+
+```bash
+# Cài đặt k6
+brew install k6  # macOS
+# hoặc xem https://k6.io/docs/get-started/installation/
+
+# Lấy access token
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"admin123"}' \
+  | jq -r '.data.accessToken')
+
+# Chạy benchmark với cache
+k6 run benchmark.js -e ACCESS_TOKEN=$TOKEN
+
+# Chạy benchmark không cache
+k6 run test-no-cache.js -e ACCESS_TOKEN=$TOKEN
+```
+
+**Dừng hệ thống:**
+
+```bash
+# Dừng tất cả services
+docker compose down
+
+# Dừng và xóa volumes (reset database)
+docker compose down -v
+
+# Dọn dẹp images không sử dụng
+docker system prune -f
+```

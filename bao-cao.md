@@ -706,3 +706,311 @@ resilience4j:
         maxAttempts: 3
         waitDuration: 1s
 ```
+
+\newpage
+
+# PHÂN TÍCH & YÊU CẦU HỆ THỐNG
+
+Chương này trình bày quá trình phân tích yêu cầu chức năng và phi chức năng của hệ thống SmartVN. Từ các yêu cầu nghiệp vụ, nhóm tiến hành xác định rõ ràng phạm vi, chức năng và đặc tả kỹ thuật cho từng microservice.
+
+## Yêu cầu chức năng
+
+Hệ thống SmartVN được phân thành 4 microservice chính, mỗi service đảm nhận một nhóm chức năng nghiệp vụ cụ thể.
+
+### User Service
+
+User Service chịu trách nhiệm quản lý toàn bộ thông tin người dùng và xác thực. Các chức năng chính bao gồm:
+
+**Quản lý tài khoản:**
+
+- Đăng ký tài khoản mới với xác thực OTP qua email.
+- Đăng nhập bằng email/mật khẩu.
+- Đăng nhập bằng OAuth2 (Google, GitHub).
+- Làm mới token (refresh token).
+- Đăng xuất.
+- Quên mật khẩu và đặt lại mật khẩu.
+
+**Quản lý hồ sơ:**
+
+- Xem thông tin cá nhân.
+- Cập nhật thông tin cá nhân (tên, số điện thoại, ảnh đại diện).
+- Quản lý danh sách địa chỉ giao hàng (thêm, sửa, xóa, đặt mặc định).
+
+**Quản lý người dùng (Admin):**
+
+- Danh sách người dùng với phân trang và tìm kiếm.
+- Cấm/bỏ cấm người dùng.
+- Thay đổi vai trò người dùng.
+- Xem thống kê người dùng.
+
+**Theo dõi tương tác:**
+
+- Ghi nhận hành vi người dùng (xem sản phẩm, thêm vào giỏ hàng).
+- Xuất dữ liệu tương tác cho hệ thống gợi ý AI.
+
+: Các endpoint của User Service {#tbl:user-api}
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| POST | /api/v1/auth/register | Đăng ký | No |
+| POST | /api/v1/auth/login | Đăng nhập | No |
+| POST | /api/v1/auth/refresh | Làm mới token | Cookie |
+| POST | /api/v1/auth/logout | Đăng xuất | JWT |
+| GET | /api/v1/users/me | Thông tin cá nhân | JWT |
+| PUT | /api/v1/users/me | Cập nhật thông tin | JWT |
+| GET | /api/v1/users/{id} | Xem thông tin user | JWT |
+| GET | /api/v1/users | Danh sách user | Admin JWT |
+| PUT | /api/v1/users/{id}/status | Cấm/bỏ cấm | Admin JWT |
+| POST | /api/v1/users/me/addresses | Thêm địa chỉ | JWT |
+| PUT | /api/v1/users/me/addresses/{id} | Sửa địa chỉ | JWT |
+| DELETE | /api/v1/users/me/addresses/{id} | Xóa địa chỉ | JWT |
+| POST | /api/v1/interactions | Ghi nhận tương tác | JWT |
+
+### Product Service
+
+Product Service quản lý toàn bộ thông tin sản phẩm, danh mục, tồn kho, đánh giá và hình ảnh. Đây là service có lưu lượng truy cập cao nhất trong hệ thống, được áp dụng cơ chế cache Redis.
+
+**Quản lý sản phẩm:**
+
+- Danh sách sản phẩm với phân trang, lọc theo danh mục, giá, thương hiệu.
+- Chi tiết sản phẩm (có cache Redis).
+- Tìm kiếm sản phẩm theo từ khóa.
+- Sản phẩm nổi bật, sản phẩm bán chạy.
+
+**Quản lý danh mục:**
+
+- Danh sách danh mục (có cache Redis, TTL 1 giờ).
+- Danh mục theo cấp bậc (parent-child).
+- Chi tiết danh mục.
+
+**Quản lý tồn kho:**
+
+- Xem tồn kho theo size, màu sắc.
+- Cập nhật số lượng tồn kho.
+- Kiểm tra tồn kho khi đặt hàng.
+
+**Quản lý đánh giá:**
+
+- Xem đánh giá của sản phẩm.
+- Thêm đánh giá (chỉ người đã mua).
+- Tính điểm trung bình.
+
+**Quản lý hình ảnh:**
+
+- Upload hình ảnh lên Cloudinary.
+- Quản lý gallery hình ảnh sản phẩm.
+
+: Các endpoint của Product Service {#tbl:product-api}
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| GET | /api/v1/products | Danh sách sản phẩm | JWT |
+| GET | /api/v1/products/{id} | Chi tiết sản phẩm | JWT |
+| POST | /api/v1/products | Tạo sản phẩm | Admin JWT |
+| PUT | /api/v1/products/{id} | Cập nhật sản phẩm | Admin JWT |
+| DELETE | /api/v1/products/{id} | Xóa sản phẩm | Admin JWT |
+| GET | /api/v1/categories | Danh sách danh mục | JWT |
+| GET | /api/v1/categories/{id} | Chi tiết danh mục | JWT |
+| POST | /api/v1/reviews | Thêm đánh giá | JWT |
+| GET | /api/v1/reviews/product/{id} | Đánh giá sản phẩm | JWT |
+| GET | /api/v1/products/{id}/inventory | Tồn kho sản phẩm | JWT |
+
+### Order Service
+
+Order Service quản lý giỏ hàng, đơn hàng và thanh toán. Service này tích hợp cổng thanh toán VNPay.
+
+**Quản lý giỏ hàng:**
+
+- Xem giỏ hàng.
+- Thêm sản phẩm vào giỏ hàng.
+- Cập nhật số lượng sản phẩm trong giỏ.
+- Xóa sản phẩm khỏi giỏ hàng.
+- Kiểm tra tồn kho trước khi thêm.
+
+**Quản lý đơn hàng:**
+
+- Tạo đơn hàng từ giỏ hàng.
+- Danh sách đơn hàng của người dùng.
+- Chi tiết đơn hàng.
+- Hủy đơn hàng.
+- Cập nhật trạng thái đơn hàng (Admin).
+
+**Thanh toán:**
+
+- Tạo URL thanh toán VNPay.
+- Xử lý callback từ VNPay.
+- Kiểm tra trạng thái thanh toán.
+
+: Các endpoint của Order Service {#tbl:order-api}
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| GET | /api/v1/cart | Xem giỏ hàng | JWT |
+| POST | /api/v1/cart/items | Thêm vào giỏ | JWT |
+| PUT | /api/v1/cart/items/{id} | Cập nhật giỏ | JWT |
+| DELETE | /api/v1/cart/items/{id} | Xóa khỏi giỏ | JWT |
+| POST | /api/v1/orders | Tạo đơn hàng | JWT |
+| GET | /api/v1/orders | Danh sách đơn hàng | JWT |
+| GET | /api/v1/orders/{id} | Chi tiết đơn hàng | JWT |
+| PATCH | /api/v1/orders/{id}/cancel | Hủy đơn hàng | JWT |
+| POST | /api/v1/payment/vnpay/create | Tạo thanh toán | JWT |
+| GET | /api/v1/payment/vnpay/callback | Callback VNPay | No |
+
+### Admin Service
+
+Admin Service tổng hợp dữ liệu từ tất cả các service khác để cung cấp dashboard quản trị. Service này sử dụng Circuit Breaker để đảm bảo tính bền vững khi gọi các service khác.
+
+**Dashboard:**
+
+- Tổng quan doanh thu, đơn hàng, người dùng, sản phẩm.
+- Biểu đồ doanh revenue theo thời gian.
+- Top sản phẩm bán chạy.
+
+**Quản lý người dùng:**
+
+- Gọi User Service để lấy danh sách, thống kê người dùng.
+
+**Quản lý sản phẩm:**
+
+- Gọi Product Service để quản lý sản phẩm, danh mục.
+
+**Quản lý đơn hàng:**
+
+- Gọi Order Service để quản lý đơn hàng, doanh thu.
+
+**Xuất dữ liệu AI:**
+
+- Xuất danh sách sản phẩm cho hệ thống gợi ý.
+- Xuất dữ liệu tương tác người dùng.
+- Xuất dữ liệu đơn hàng cho training model.
+
+: Các endpoint của Admin Service {#tbl:admin-api}
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| GET | /api/v1/admin/dashboard | Dashboard tổng quan | Admin JWT |
+| GET | /api/v1/admin/users/stats | Thống kê user | Admin JWT |
+| GET | /api/v1/admin/products/stats | Thống kê sản phẩm | Admin JWT |
+| GET | /api/v1/admin/orders/stats | Thống kê đơn hàng | Admin JWT |
+| GET | /api/v1/admin/orders/revenue | Doanh thu | Admin JWT |
+| GET | /api/v1/internal/admin/export/products | Xuất sản phẩm | API Key |
+| GET | /api/v1/internal/admin/export/interactions | Xuất tương tác | API Key |
+| GET | /api/v1/internal/admin/export/orders | Xuất đơn hàng | API Key |
+
+## Yêu cầu phi chức năng
+
+Ngoài các yêu cầu chức năng, hệ thống cần đáp ứng các yêu cầu phi chức năng quan trọng sau:
+
+: Yêu cầu phi chức năng của hệ thống {#tbl:nfr}
+
+| Tiêu chí | Yêu cầu | Giải pháp |
+|---|---|---|
+| Hiệu năng | Thời gian phản hồi < 200ms cho 95% request | Redis caching, connection pooling |
+| Khả năng mở rộng | Hỗ trợ 100+ VU đồng thời | Microservices, horizontal scaling |
+| Tính sẵn sàng | 99.5% uptime | Circuit Breaker, health checks |
+| Bảo mật | Bảo vệ JWT, CORS, API Key | Spring Security, HTTPS |
+| Khả năng duy trì | Code sạch, tài liệu đầy đủ | Clean code, Swagger docs |
+| Khả năng kiểm thử | Test coverage > 70% | Unit test, integration test |
+| Monitoring | Theo dõi health các service | Actuator, Eureka dashboard |
+
+## Use Case tổng quan
+
+Hệ thống có 3 loại actor chính:
+
+**Actor 1 — Khách hàng (Customer):**
+
+- Đăng ký/đăng nhập tài khoản.
+- Duyệt và tìm kiếm sản phẩm.
+- Xem chi tiết sản phẩm.
+- Thêm sản phẩm vào giỏ hàng.
+- Đặt hàng và thanh toán.
+- Xem lịch sử đơn hàng.
+- Đánh giá sản phẩm đã mua.
+- Quản lý địa chỉ giao hàng.
+
+**Actor 2 — Quản trị viên (Admin):**
+
+- Xem dashboard tổng quan.
+- Quản lý sản phẩm (CRUD).
+- Quản lý danh mục.
+- Quản lý đơn hàng (xem, cập nhật trạng thái).
+- Quản lý người dùng (xem, cấm/bỏ cấm).
+- Xem thống kê doanh thu.
+
+**Actor 3 — Hệ thống (System):**
+
+- Xác thực JWT khi có yêu cầu API.
+- Cache dữ liệu sản phẩm với Redis.
+- Gửi OTP qua email khi đăng ký.
+- Xử lý callback thanh toán từ VNPay.
+- Ghi nhận tương tác người dùng.
+- Circuit Breaker bảo vệ khi service lỗi.
+
+: Bảng tổng hợp Use Case {#tbl:usecase}
+
+| ID | Use Case | Actor | Mô tả tóm tắt |
+|---|---|---|---|
+| UC01 | Đăng ký tài khoản | Customer | Đăng ký với email, xác thực OTP |
+| UC02 | Đăng nhập | Customer/Admin | Email/password hoặc OAuth2 |
+| UC03 | Duyệt sản phẩm | Customer | Xem danh sách, lọc, tìm kiếm |
+| UC04 | Xem chi tiết sản phẩm | Customer | Thông tin đầy đủ, đánh giá |
+| UC05 | Quản lý giỏ hàng | Customer | Thêm, sửa, xóa sản phẩm |
+| UC06 | Đặt hàng | Customer | Tạo đơn từ giỏ hàng |
+| UC07 | Thanh toán VNPay | Customer | Chuyển hướng đến VNPay |
+| UC08 | Xem đơn hàng | Customer | Danh sách và chi tiết |
+| UC09 | Đánh giá sản phẩm | Customer | Rate và comment |
+| UC10 | Xem dashboard | Admin | Tổng quan hệ thống |
+| UC11 | Quản lý sản phẩm | Admin | CRUD sản phẩm |
+| UC12 | Quản lý đơn hàng | Admin | Xem, cập nhật trạng thái |
+| UC13 | Quản lý người dùng | Admin | Xem, cấm/bỏ cấm |
+
+## Đặc tả API endpoints
+
+Tất cả API trong hệ thống tuân theo chuẩn RESTful và trả về response theo định dạng chung:
+
+```json
+{
+  "code": 200,
+  "message": "Success",
+  "data": { ... }
+}
+```
+
+**Authentication flow:**
+
+- Client gửi yêu cầu đăng nhập đến API Gateway.
+- Gateway chuyển tiếp đến User Service (không yêu cầu JWT).
+- User Service xác thực và trả về access token + refresh token.
+- Access token được lưu trong memory, refresh token trong HttpOnly cookie.
+- Các yêu cầu tiếp theo đều chứa access token trong header Authorization.
+
+**Error handling:**
+
+```json
+{
+  "code": 400,
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "email",
+      "message": "Email không hợp lệ"
+    }
+  ]
+}
+```
+
+**Pagination:**
+
+```json
+{
+  "code": 200,
+  "message": "Success",
+  "data": {
+    "content": [...],
+    "totalElements": 100,
+    "totalPages": 10,
+    "size": 10,
+    "number": 0
+  }
+}
+```

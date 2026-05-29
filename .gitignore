@@ -2,6 +2,7 @@
 *.docx
 !template.docx
 *.pdf
+!slides/ocr-presentation-styled.pdf
 
 # Temporary files
 *.tmp

@@ -1,0 +1,681 @@
+% ============================================================
+% OCR Presentation - Professional Styled Version
+% Compile with: xelatex ocr-presentation-styled.tex
+% ============================================================
+\documentclass[aspectratio=169, 10pt]{beamer}
+
+% ── Font & Language (XeLaTeX) ──────────────────────────────
+\usepackage{fontspec}
+\setmainfont{Lato}[
+ BoldFont = Lato Bold,
+ ItalicFont = Lato Italic,
+ BoldItalicFont = Lato Bold Italic
+]
+\setsansfont{Lato}[
+ BoldFont = Lato Bold,
+ ItalicFont = Lato Italic,
+ BoldItalicFont = Lato Bold Italic
+]
+\setmonofont{Noto Sans Mono}
+
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+
+% ── Custom Color Palette ───────────────────────────────────
+\definecolor{primary}{HTML}{1B2A4A} % Deep navy
+\definecolor{accent}{HTML}{2E86DE} % Vibrant blue
+\definecolor{accentlight}{HTML}{D6EAF8} % Light blue bg
+\definecolor{accentdark}{HTML}{1A5276} % Dark blue
+\definecolor{success}{HTML}{27AE60} % Green
+\definecolor{warning}{HTML}{F39C12} % Orange
+\definecolor{danger}{HTML}{E74C3C} % Red
+\definecolor{graytext}{HTML}{7F8C8D} % Gray text
+\definecolor{lightbg}{HTML}{F8F9FA} % Light background
+\definecolor{darktext}{HTML}{2C3E50} % Dark text
+\definecolor{sectionbg}{HTML}{EBF5FB} % Section background
+\definecolor{codegreen}{HTML}{27AE60}
+\definecolor{codepurple}{HTML}{8E44AD}
+\definecolor{backcolour}{HTML}{F5F6FA}
+
+% ── Beamer Theme Customization ─────────────────────────────
+\usetheme{Madrid}
+\usecolortheme{whale}
+
+% Override beamercolor
+\setbeamercolor{structure}{fg=accent}
+\setbeamercolor{frametitle}{fg=white, bg=primary}
+\setbeamercolor{title}{fg=white, bg=primary}
+\setbeamercolor{subtitle}{fg=accentlight}
+\setbeamercolor{author}{fg=white}
+\setbeamercolor{institute}{fg=accentlight}
+\setbeamercolor{date}{fg=accentlight}
+\setbeamercolor{section in toc}{fg=primary}
+\setbeamercolor{subsection in toc}{fg=accentdark}
+\setbeamercolor{normal text}{fg=darktext}
+\setbeamercolor{block title}{fg=white, bg=accent}
+\setbeamercolor{block body}{fg=darktext, bg=lightbg}
+\setbeamercolor{block alerted title}{fg=white, bg=danger}
+\setbeamercolor{block alerted body}{fg=darktext, bg=red!5}
+\setbeamercolor{block example title}{fg=white, bg=success}
+\setbeamercolor{block example body}{fg=darktext, bg=green!5}
+\setbeamercolor{item}{fg=accent}
+\setbeamercolor{subitem}{fg=accentdark}
+\setbeamercolor{button}{bg=accent, fg=white}
+
+% Custom footline with slide number + logo bar
+\setbeamercolor{footline}{fg=white, bg=primary}
+\setbeamertemplate{footline}{
+ \leavevmode%
+ \hbox{%
+ \begin{beamercolorbox}[wd=.4\paperwidth,ht=2.5ex,dp=1ex,left]{footline}%
+ \hspace*{2ex}\insertshorttitle
+ \end{beamercolorbox}%
+ \begin{beamercolorbox}[wd=.35\paperwidth,ht=2.5ex,dp=1ex,center]{footline}%
+ \insertshortauthor
+ \end{beamercolorbox}%
+ \begin{beamercolorbox}[wd=.25\paperwidth,ht=2.5ex,dp=1ex,right]{footline}%
+ \insertframenumber{} / \inserttotalframenumber\hspace*{2ex}
+ \end{beamercolorbox}}%
+ \vskip0pt%
+}
+
+% Custom headline with accent bar
+\setbeamercolor{headline}{fg=white, bg=accent}
+\setbeamertemplate{headline}{
+ \leavevmode%
+ \hbox{%
+ \begin{beamercolorbox}[wd=\paperwidth,ht=3pt,dp=0pt]{headline}%
+ \end{beamercolorbox}}%
+ \vskip0pt%
+}
+
+% Remove navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Custom title page
+\setbeamertemplate{title page}{
+ \vbox{}
+ \vfill
+ \begingroup
+ \centering
+ \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+ \usebeamerfont{title}\inserttitle\par%
+ \ifx\insertsubtitle\@empty%
+ \else%
+ \vskip0.5em%
+ {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}%
+ \fi%
+ \end{beamercolorbox}%
+ \vskip1em\par
+ \begin{beamercolorbox}[sep=8pt,center]{author}
+ \usebeamerfont{author}\insertauthor
+ \end{beamercolorbox}
+ \begin{beamercolorbox}[sep=4pt,center]{institute}
+ \usebeamerfont{institute}\insertinstitute
+ \end{beamercolorbox}
+ \begin{beamercolorbox}[sep=8pt,center]{date}
+ \usebeamerfont{date}\insertdate
+ \end{beamercolorbox}
+ \endgroup
+ \vfill
+}
+
+% ── Packages ───────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,shadows.blur,calc}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{multicol}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+% \usepackage{fontawesome5} % removed
+\usepackage{tabularx}
+\usepackage{colortbl}
+
+% ── Code Listing Style ─────────────────────────────────────
+\lstdefinestyle{mystyle}{
+ backgroundcolor=\color{backcolour},
+ commentstyle=\color{codegreen}\itshape,
+ keywordstyle=\color{accent}\bfseries,
+ numberstyle=\tiny\color{graytext},
+ stringstyle=\color{codepurple},
+ basicstyle=\ttfamily\footnotesize,
+ breaklines=true,
+ frame=none,
+ xleftmargin=8pt,
+ framexleftmargin=8pt,
+ rulecolor=\color{accent!30},
+ morekeywords={store_name, date, total, items, name, qty, price}
+}
+\lstset{style=mystyle}
+
+% ── Custom Boxes ───────────────────────────────────────────
+\newtcolorbox{infobox}[1][]{
+ colback=accentlight,
+ colframe=accent,
+ coltitle=white,
+ fonttitle=\bfseries,
+ title=#1,
+ rounded corners,
+ boxrule=0.8pt,
+ left=6pt, right=6pt, top=4pt, bottom=4pt
+}
+
+\newtcolorbox{warnbox}[1][]{
+ colback=orange!8,
+ colframe=warning,
+ coltitle=white,
+ fonttitle=\bfseries,
+ title=#1,
+ rounded corners,
+ boxrule=0.8pt,
+ left=6pt, right=6pt, top=4pt, bottom=4pt
+}
+
+\newtcolorbox{successbox}[1][]{
+ colback=green!8,
+ colframe=success,
+ coltitle=white,
+ fonttitle=\bfseries,
+ title=#1,
+ rounded corners,
+ boxrule=0.8pt,
+ left=6pt, right=6pt, top=4pt, bottom=4pt
+}
+
+% ── Metadata ───────────────────────────────────────────────
+\title[Trích xuất Hóa đơn VN]{\textbf{Trích xuất Thông tin Hóa đơn Tiếng Việt từ Ảnh}}
+\subtitle{Pipeline PaddleOCR -- VietOCR -- LayoutLMv3}
+\author{Đồ án Môn học}
+\institute{Học viện Công nghệ Bưu chính Viễn thông \\ Khoa Công nghệ Thông tin 2}
+\date{Tháng 6, 2026}
+
+% ============================================================
+\begin{document}
+
+%---------------------------------------------------------
+% Slide 1: Title
+%---------------------------------------------------------
+\begin{frame}[plain]
+ \titlepage
+\end{frame}
+
+%---------------------------------------------------------
+% Slide 2: Outline
+%---------------------------------------------------------
+\begin{frame}{Nội dung trình bày}
+ \tableofcontents
+\end{frame}
+
+%---------------------------------------------------------
+% Section 1: MỞ ĐẦU
+%---------------------------------------------------------
+\section{Mở đầu}
+
+% Slide 3
+\begin{frame}{Bối cảnh bài toán}
+ \begin{itemize}
+ \item[$\bullet$] Mỗi ngày, hàng triệu giao dịch thương mại tại Việt Nam tạo ra hàng triệu tờ hóa đơn giấy
+ \item[$\bullet$] Kế toán viên gõ tay từng con số $\rightarrow$ sai sót nhập liệu thường xuyên
+ \item[$\bullet$] Máy tính đã có thể đọc chữ in từ lâu, nhưng đọc hóa đơn thực tế vẫn là thách thức:
+ \begin{itemize}
+ \item Font chữ tùy ý, góc chụp nghiêng
+ \item Ánh sáng không đều
+ \item Tiếng Việt với đầy đủ dấu thanh
+ \end{itemize}
+ \item[$\bullet$] Cần biến \textbf{ảnh hóa đơn} thành \textbf{dữ liệu có cấu trúc}
+ \end{itemize}
+\end{frame}
+
+% Slide 4
+\begin{frame}{Các tình huống thực tế}
+ \begin{infobox}[Kịch bản A -- Kế toán doanh nghiệp nhỏ]
+ 300 hóa đơn công tác phí, mất 2--3 ngày nhập thủ công
+ \end{infobox}
+ \vspace{0.2cm}
+ \begin{infobox}[Kịch bản B -- Ứng dụng chi tiêu cá nhân]
+ Chụp ảnh hóa đơn $\rightarrow$ tự động điền ngày, siêu thị, tổng tiền
+ \end{infobox}
+ \vspace{0.2cm}
+ \begin{infobox}[Kịch bản C -- Kiểm toán \& tuân thủ thuế]
+ Xác minh hàng nghìn hóa đơn VAT tự động
+ \end{infobox}
+ \vspace{0.3cm}
+ \centering
+ $\Rightarrow$ Nhu cầu chung: \textbf{\textcolor{accent}{Document Information Extraction (DIE)}}
+\end{frame}
+
+%---------------------------------------------------------
+% Section 2: TỔNG QUAN
+%---------------------------------------------------------
+\section{Tổng quan bài toán}
+
+% Slide 5
+\begin{frame}{Mô hình hóa bài toán -- Ba tầng xử lý}
+ \begin{center}
+ \begin{tikzpicture}[
+ box/.style={rectangle, draw=accent, rounded corners=8pt, fill=accentlight, text width=11cm, minimum height=1.3cm, align=center, font=\small, drop shadow={shadow xshift=1pt, shadow yshift=-1pt, opacity=0.2}},
+ arrow/.style={->, thick, >=stealth, color=accent}
+ ]
+ \node[box, fill=accent!20] (t3) at (0,3.8) {\textbf{\textcolor{primary}{Tầng 3:}} Trích xuất thực thể có cấu trúc (KIE) -- LayoutLMv3};
+ \node[box, fill=accent!12] (t2) at (0,2.0) {\textbf{\textcolor{primary}{Tầng 2:}} Nhận dạng ký tự (OCR Recognition) -- VietOCR};
+ \node[box, fill=accentlight] (t1) at (0,0) {\textbf{\textcolor{primary}{Tầng 1:}} Phát hiện vùng chữ (Text Detection) -- PaddleOCR};
+ \draw[arrow, line width=1.5pt] (t1) -- node[right, font=\small\bfseries, text=accent]{$\downarrow$} (t2);
+ \draw[arrow, line width=1.5pt] (t2) -- node[right, font=\small\bfseries, text=accent]{$\downarrow$} (t3);
+ \end{tikzpicture}
+ \end{center}
+\end{frame}
+
+% Slide 6
+\begin{frame}{Đầu vào \& Đầu ra}
+ \begin{tcolorbox}[colback=accentlight, colframe=accent, title=Đầu vào, rounded corners]
+ Ảnh JPEG/PNG hóa đơn chụp bằng điện thoại (nghiêng, nhòe, ánh sáng không đều)
+ \end{tcolorbox}
+ \vspace{0.3cm}
+ \textbf{Đầu ra:} Cấu trúc JSON có ngữ nghĩa
+ \vspace{0.2cm}
+
+ \begin{center}
+ \begin{tcolorbox}[colback=green!5, colframe=success, rounded corners, width=13cm]
+ \texttt{\footnotesize
+ \{ store\_name: Circle K, date: 2024-05-27, total: 87000,\newline
+ \ \ \ \ items: [ \{name: Cafe sua da, qty: 2, price: 29000\}, ... ] \}}
+ \end{tcolorbox}
+ \end{center}
+\end{frame}
+
+% Slide 7
+\begin{frame}{Pipeline xử lý}
+ \begin{center}
+ \begin{tikzpicture}[
+ node distance=1.6cm,
+ process/.style={rectangle, draw=accent, rounded corners=6pt, fill=accent!15, minimum height=1.1cm, minimum width=2.8cm, align=center, font=\footnotesize\bfseries, drop shadow={shadow xshift=0.5pt, shadow yshift=-0.5pt, opacity=0.15}},
+ data/.style={rectangle, draw=success, rounded corners=6pt, fill=green!10, minimum height=0.9cm, minimum width=2.8cm, align=center, font=\footnotesize, drop shadow={shadow xshift=0.5pt, shadow yshift=-0.5pt, opacity=0.15}},
+ arrow/.style={->, thick, >=stealth, color=accent}
+ ]
+ \node[data] (img) {Ảnh hóa đơn};
+ \node[process, right=of img] (det) {PaddleOCR\\Detection};
+ \node[data, right=of det] (bbox) {Bounding\\Boxes};
+ \node[process, right=of bbox] (rec) {VietOCR\\Recognition};
+ \node[data, right=of rec] (text) {Text + BBox};
+ \node[process, below=1.6cm of rec] (kie) {LayoutLMv3\\KIE};
+ \node[data, left=of kie] (json) {JSON\\Cấu trúc};
+
+ \draw[arrow] (img) -- (det);
+ \draw[arrow] (det) -- (bbox);
+ \draw[arrow] (bbox) -- (rec);
+ \draw[arrow] (rec) -- (text);
+ \draw[arrow] (text) -- (kie);
+ \draw[arrow] (kie) -- (json);
+ \end{tikzpicture}
+ \end{center}
+\end{frame}
+
+%---------------------------------------------------------
+% Section 3: PHÂN LOẠI & TIẾN HÓA
+%---------------------------------------------------------
+\section{Phân loại và tiến hóa}
+
+% Slide 8
+\begin{frame}{Text Detection -- Từ sliding window đến anchor-free}
+ \begin{columns}[T]
+ \begin{column}{0.48\textwidth}
+ \begin{tcolorbox}[colback=gray!8, colframe=graytext, title={Thế hệ 1 (trước 2015)}, fonttitle=\bfseries, rounded corners, boxrule=0.5pt]
+ \begin{itemize}
+ \item MSER, SWT
+ \item Phân tích pixel theo màu sắc, độ rộng nét bút
+ \item Chỉ hoạt động với ảnh sạch, chữ đứng
+ \end{itemize}
+ \end{tcolorbox}
+ \vspace{0.2cm}
+ \begin{tcolorbox}[colback=orange!8, colframe=warning, title={Thế hệ 2 (2015--2017)}, fonttitle=\bfseries, rounded corners, boxrule=0.5pt]
+ \begin{itemize}
+ \item CTPN, TextBoxes++, SegLink
+ \item CNN-based với Anchor Boxes
+ \item Khó phát hiện văn bản cong
+ \end{itemize}
+ \end{tcolorbox}
+ \end{column}
+ \begin{column}{0.48\textwidth}
+ \begin{tcolorbox}[colback=accentlight, colframe=accent, title={Thế hệ 3 (2018--nay)}, fonttitle=\bfseries, rounded corners, boxrule=0.8pt]
+ \begin{itemize}
+ \item \textbf{DB (Differentiable Binarization)}
+ \item Xương sống của PaddleOCR
+ \item Dự đoán probability map per pixel
+ \item Ngưỡng có thể học được (differentiable threshold)
+ \item Tối ưu cho CPU/mobile
+ \end{itemize}
+ \end{tcolorbox}
+ \end{column}
+ \end{columns}
+\end{frame}
+
+% Slide 9
+\begin{frame}{Text Recognition -- Từ template matching đến Attention}
+ \begin{columns}[T]
+ \begin{column}{0.48\textwidth}
+ \begin{tcolorbox}[colback=gray!8, colframe=graytext, title={Thế hệ 1 (trước 2014)}, fonttitle=\bfseries, rounded corners, boxrule=0.5pt]
+ \begin{itemize}
+ \item Tesseract v3, template matching
+ \item Tách từng ký tự, so sánh template
+ \item Yêu cầu font rõ ràng
+ \end{itemize}
+ \end{tcolorbox}
+ \vspace{0.2cm}
+ \begin{tcolorbox}[colback=orange!8, colframe=warning, title={Thế hệ 2 (2015--2018)}, fonttitle=\bfseries, rounded corners, boxrule=0.5pt]
+ \begin{itemize}
+ \item \textbf{CRNN + CTC}
+ \item CNN + BiLSTM + CTC loss
+ \item Nền tảng OCR hiện đại
+ \end{itemize}
+ \end{tcolorbox}
+ \end{column}
+ \begin{column}{0.48\textwidth}
+ \begin{tcolorbox}[colback=accentlight, colframe=accent, title={Thế hệ 3 (2018--nay)}, fonttitle=\bfseries, rounded corners, boxrule=0.8pt]
+ \begin{itemize}
+ \item \textbf{VietOCR -- Seq2Seq + Attention}
+ \item VGG/ResNet encoder + Transformer decoder
+ \item Xử lý dấu thanh tiếng Việt tốt hơn
+ \item Pretrain trên 5M+ ảnh text tiếng Việt
+ \item 60+ font chữ thông dụng
+ \end{itemize}
+ \end{tcolorbox}
+ \end{column}
+ \end{columns}
+\end{frame}
+
+% Slide 10
+\begin{frame}{Key Information Extraction -- Từ rule-based đến Multi-modal}
+ \begin{columns}[T]
+ \begin{column}{0.48\textwidth}
+ \begin{tcolorbox}[colback=gray!8, colframe=graytext, title={Thế hệ 1 -- Rule-based}, fonttitle=\bfseries, rounded corners, boxrule=0.5pt]
+ \begin{itemize}
+ \item Regex, heuristic
+ \item Nhanh, không cần training
+ \item Vỡ ngay khi gặp format mới
+ \end{itemize}
+ \end{tcolorbox}
+ \vspace{0.2cm}
+ \begin{tcolorbox}[colback=orange!8, colframe=warning, title={Thế hệ 2 -- BERT NER}, fonttitle=\bfseries, rounded corners, boxrule=0.5pt]
+ \begin{itemize}
+ \item Token classification
+ \item Bỏ qua thông tin vị trí không gian
+ \end{itemize}
+ \end{tcolorbox}
+ \end{column}
+ \begin{column}{0.48\textwidth}
+ \begin{tcolorbox}[colback=accentlight, colframe=accent, title={Thế hệ 3 -- LayoutLMv3}, fonttitle=\bfseries, rounded corners, boxrule=0.8pt]
+ \begin{itemize}
+ \item Microsoft, 2022
+ \item Kết hợp 3 nguồn: text OCR + tọa độ bbox + patch ảnh
+ \item Unified self-attention qua cả 3 modality
+ \item Pre-training: MLM + MIM + Text-Image Alignment
+ \item \textbf{Đột phá} cho Document AI
+ \end{itemize}
+ \end{tcolorbox}
+ \end{column}
+ \end{columns}
+\end{frame}
+
+%---------------------------------------------------------
+% Section 4: TRỰC GIÁC
+%---------------------------------------------------------
+\section{Trực giác và tư duy}
+
+% Slide 11
+\begin{frame}{Con người đọc hóa đơn như thế nào?}
+ \begin{enumerate}
+ \item[$\bullet$] \textbf{Vị trí không gian mang ngữ nghĩa:}
+ \begin{itemize}
+ \item ``Tổng cộng'' $\rightarrow$ góc dưới phải, font lớn, in đậm
+ \item Tên cửa hàng $\rightarrow$ trên cùng, canh giữa
+ \end{itemize}
+ \item[$\bullet$] \textbf{Căn lề là thông tin:}
+ \begin{itemize}
+ \item Giá tiền căn phải, tên mặt hàng căn trái
+ \end{itemize}
+ \item[$\bullet$] \textbf{Gần nhau $\rightarrow$ liên quan:}
+ \begin{itemize}
+ \item ``2 x 29,000'' và ``58,000'' cùng dòng $\rightarrow$ cùng mặt hàng
+ \end{itemize}
+ \item[$\bullet$] \textbf{Pattern lặp lại trong vùng bảng:}
+ \begin{itemize}
+ \item 5 dòng có cấu trúc [tên $|$ số $|$ số] $\rightarrow$ bảng mặt hàng
+ \end{itemize}
+ \end{enumerate}
+\end{frame}
+
+% Slide 12
+\begin{frame}{Mô hình mô phỏng trực giác con người}
+ \begin{center}
+ \begin{tabularx}{\textwidth}{>{\bfseries\color{primary}}p{3.5cm}X}
+ \toprule
+ \textcolor{primary}{Trực giác} & \textcolor{primary}{Mô hình mô phỏng} \\
+ \midrule
+ \rowcolor{accentlight}
+ Vùng chữ có cấu trúc pixel đặc biệt & PaddleOCR Detection: học probability map \\
+ Đọc ký tự cần ngữ cảnh xung quanh & VietOCR: attention ``nhìn lại'' toàn bộ ảnh \\
+ \rowcolor{accentlight}
+ Vị trí + nội dung + hình ảnh cùng quyết định & LayoutLMv3: fuse 3 luồng trong transformer \\
+ \bottomrule
+ \end{tabularx}
+ \end{center}
+ \vspace{0.4cm}
+ \begin{warnbox}[Giả định ngầm]
+ Mỗi mô hình đều có giả định riêng về dữ liệu input $\rightarrow$ khi giả định vi phạm, mô hình suy giảm chất lượng.
+ \end{warnbox}
+\end{frame}
+
+%---------------------------------------------------------
+% Section 5: TOÁN HỌC HÓA
+%---------------------------------------------------------
+\section{Toán học hóa}
+
+% Slide 13
+\begin{frame}{PaddleOCR -- DB (Differentiable Binarization)}
+ \begin{infobox}[Phép toán chủ đạo: Segmentation + Adaptive Thresholding]
+ \end{infobox}
+ \vspace{0.3cm}
+
+ Mô hình học 2 map song song từ feature map $F$:
+ \begin{align*}
+ P &= \sigma(\text{Conv}(F)) && \leftarrow \text{\textcolor{accent}{Probability map}} \\
+ T &= \sigma(\text{Conv}'(F)) && \leftarrow \text{\textcolor{warning}{Threshold map}} \\
+ \hat{B} &= \sigma\left(\frac{P - T}{k}\right) && \leftarrow \text{\textcolor{success}{Binary map (differentiable)}}
+ \end{align*}
+ \vspace{0.2cm}
+
+ \textbf{Bí quyết:} $\sigma\left(\frac{P-T}{k}\right)$ với $k=50$ xấp xỉ hàm step nhưng vẫn có gradient để backprop.
+
+ \vspace{0.2cm}
+ \begin{tcolorbox}[colback=lightbg, colframe=primary, boxrule=0.5pt, rounded corners]
+ \textbf{Loss:} $L = L_{\text{bce}}(P, G_p) + \alpha \cdot L_{\text{bce}}(\hat{B}, G_b) + \beta \cdot L_1(T, G_t)$ \\
+ \textbf{Tham số:} ResNet-18/50 + FPN, khoảng 10--27M tham số.
+ \end{tcolorbox}
+\end{frame}
+
+% Slide 14
+\begin{frame}{VietOCR -- Seq2Seq với Attention}
+ \begin{infobox}[Phép toán chủ đạo: Cross-Attention trong Transformer decoder]
+ \end{infobox}
+ \vspace{0.3cm}
+
+ \begin{align*}
+ F &= \text{CNN\_Encoder}(\text{ảnh}) \quad \text{shape: } (H/4, W/4, C) \\
+ F_{\text{flat}} &= \text{reshape}(F) + \text{positional\_embed} \quad \text{shape: } (S, C) \\
+ h_t &= \text{TransformerDecoder}(h_{t-1}, F_{\text{flat}}) \\
+ p(y_t) &= \text{Softmax}(\text{Linear}(h_t))
+ \end{align*}
+ \vspace{0.2cm}
+
+ \textbf{Attention:} $\alpha_{t,s} = \text{softmax}\left(\frac{Q_t \cdot K_s}{\sqrt{d_k}}\right)$ -- cho phép ``nhìn'' vào vùng feature tương ứng.
+
+ \vspace{0.2cm}
+ \begin{successbox}[Đặc biệt tiếng Việt]
+ Khi sinh ``ề'', decoder attend mạnh vào vùng có dấu phụ kép (mũ + huyền). \\
+ \textbf{Vocab:} 130--150 ký tự Unicode tiếng Việt + dấu câu + số.
+ \end{successbox}
+\end{frame}
+
+% Slide 15
+\begin{frame}{LayoutLMv3 -- Multi-modal Transformer}
+ \begin{infobox}[Phép toán chủ đạo: Unified Self-Attention qua cả 3 modality]
+ \end{infobox}
+ \vspace{0.3cm}
+
+ \textbf{Input token $i$:}
+ \[e_i = E_{\text{text}}(\text{token}_i) + E_{\text{1D}}(\text{pos}_i) + E_{\text{2D}}(x_1, y_1, x_2, y_2, w, h)\]
+
+ \textbf{Image patch $j$:}
+ \[v_j = \text{LinearProj}(\text{patch}_j) + E_{\text{img\_pos}}(j)\]
+
+ \textbf{Concatenate $\rightarrow$ Transformer $\rightarrow$ Contextualized representations}
+ \vspace{0.3cm}
+
+ \textbf{Pre-training objectives:}
+ \begin{itemize}
+ \item[$\bullet$] Masked Language Modeling (MLM) trên text
+ \item[$\bullet$] Masked Image Modeling (MIM) trên ảnh
+ \item[$\bullet$] Text-Image Alignment
+ \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------
+% Section 6: KHOẢNG CÁCH
+%---------------------------------------------------------
+\section{Khoảng cách giữa lý thuyết và thực tế}
+
+% Slide 16
+\begin{frame}{Hàm mất mát và lý do lựa chọn}
+ \begin{center}
+ \begin{tabularx}{\textwidth}{>{\bfseries}p{2.5cm}p{4cm}X}
+ \toprule
+ \textcolor{primary}{Tầng} & \textcolor{primary}{Loss Function} & \textcolor{primary}{Tại sao?} \\
+ \midrule
+ \rowcolor{accentlight}
+ Detection & BCE + L1 & Gradient ổn định, robust với outlier \\
+ Recognition & Cross-Entropy chuỗi & Smooth, vi phân được \\
+ \rowcolor{accentlight}
+ KIE & Cross-Entropy/token & Tính được tại từng token \\
+ \bottomrule
+ \end{tabularx}
+ \end{center}
+ \vspace{0.4cm}
+
+ \textbf{Tại sao không dùng Metric làm Loss?}
+ \begin{itemize}
+ \item[\textcolor{danger}{$\bullet$}] Field Exact Match: không có gradient
+ \item[\textcolor{danger}{$\bullet$}] CER (edit distance): không liên tục
+ \item[\textcolor{danger}{$\bullet$}] Entity F1: phụ thuộc ngưỡng confidence
+ \end{itemize}
+ \vspace{0.2cm}
+ \centering
+ $\Rightarrow$ Dùng CE làm Loss, F1/CER/Exact Match chỉ để đánh giá.
+\end{frame}
+
+% Slide 17
+\begin{frame}{Hệ quả thực tế}
+ \begin{alertblock}{Điểm đau lớn nhất}
+ Mô hình có thể đạt \textbf{CER rất thấp (98\% ký tự đúng)} nhưng \textbf{Field Exact Match chỉ 70\%} -- vì chỉ cần sai 1 ký tự trong ``87.000'' thành ``87.500'' là cả trường total sai hoàn toàn.
+ \end{alertblock}
+ \vspace{0.3cm}
+
+ \textbf{Khả năng mở rộng Loss:}
+ \begin{itemize}
+ \item[\textcolor{success}{$\bullet$}] Thêm class mới: DISCOUNT, TAX\_CODE
+ \item[\textcolor{success}{$\bullet$}] Weighted loss: ưu tiên TOTAL, DATE
+ \item[\textcolor{success}{$\bullet$}] Consistency constraint: $\sum$(subtotals) $\approx$ total
+ \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------
+% Section 7: THÁCH THỨC
+%---------------------------------------------------------
+\section{Thách thức và rào cản}
+
+% Slide 18
+\begin{frame}{Trở ngại đã giải quyết \& còn tồn đọng}
+ \begin{successbox}[Đã giải quyết]
+ \begin{itemize}
+ \item Văn bản đa hướng, cong $\rightarrow$ DB, ABCNet (bezier curves)
+ \item Font chữ đa dạng tiếng Việt $\rightarrow$ VietOCR pretrained + augmentation
+ \item Hiểu layout cơ bản $\rightarrow$ 2D positional embedding (LayoutLM)
+ \end{itemize}
+ \end{successbox}
+ \vspace{0.3cm}
+
+ \begin{warnbox}[Còn tồn đọng]
+ \begin{itemize}
+ \item[$\times$] Ảnh chất lượng thấp (run, nhòe, phản chiếu) -- CER tụt 85--90\%
+ \item[$\times$] Hóa đơn in nhiệt bị phai -- contrast rất thấp
+ \item[$\times$] Zero-shot generalization -- cần fine-tune cho mỗi template mới
+ \item[$\times$] Dữ liệu tiếng Việt khan hiếm, hạ tầng GPU đắt
+ \item[$\times$] Relation Extraction phức tạp (20+ mặt hàng)
+ \end{itemize}
+ \end{warnbox}
+\end{frame}
+
+% Slide 19
+\begin{frame}{Hướng đi tương lai}
+ \begin{enumerate}
+ \item[$\bullet$] \textbf{End-to-end Document Understanding:}
+ \begin{itemize}
+ \item Donut, Nougat -- bỏ qua OCR, ảnh $\rightarrow$ JSON trực tiếp
+ \end{itemize}
+ \item[$\bullet$] \textbf{Large Vision-Language Models (LVLMs):}
+ \begin{itemize}
+ \item GPT-4V, Gemini -- zero-shot, không cần fine-tune
+ \end{itemize}
+ \item[$\bullet$] \textbf{Self-supervised pretraining trên tài liệu Việt:}
+ \begin{itemize}
+ \item Corpus hóa đơn/biểu mẫu tiếng Việt quy mô lớn
+ \end{itemize}
+ \item[$\bullet$] \textbf{Synthetic data generation:}
+ \begin{itemize}
+ \item Tạo hóa đơn giả + domain randomization
+ \end{itemize}
+ \end{enumerate}
+\end{frame}
+
+%---------------------------------------------------------
+% Section 8: KẾT LUẬN
+%---------------------------------------------------------
+\section{Kết luận}
+
+% Slide 20
+\begin{frame}{Kết luận}
+ \begin{itemize}
+ \item[$\bullet$] Bài toán trích xuất hóa đơn tiếng Việt đòi hỏi giải quyết đồng thời 3 thách thức: \textbf{phát hiện vùng chữ}, \textbf{nhận dạng ký tự}, \textbf{hiểu cấu trúc ngữ nghĩa}
+ \vspace{0.2cm}
+ \item[$\bullet$] Pipeline \textbf{\textcolor{accent}{PaddleOCR $\rightarrow$ VietOCR $\rightarrow$ LayoutLMv3}} là lựa chọn hợp lý hiện tại với pretrained weights chất lượng tốt
+ \vspace{0.2cm}
+ \item[$\bullet$] Nhược điểm cố hữu: \textbf{\textcolor{danger}{lỗi tích lũy qua từng tầng}}
+ \vspace{0.2cm}
+ \item[$\bullet$] Ranh giới giữa OCR+NLP pipeline và end-to-end LVLM đang dần mờ đi
+ \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------
+% Slide 21: Cảm ơn
+%---------------------------------------------------------
+\begin{frame}[plain]
+ \begin{tikzpicture}[remember picture, overlay]
+ \fill[primary] (current page.south west) rectangle (current page.north east);
+ \fill[accent!30] ([yshift=-3cm]current page.north) circle (8cm);
+ \end{tikzpicture}
+ \vspace{2cm}
+ \begin{center}
+ {\Huge\bfseries\color{white} Cảm ơn Thầy và Các bạn!}
+ \vspace{1cm}
+
+ {\Large\color{accentlight} Xin cảm ơn!}
+ \vspace{0.8cm}
+
+ {\normalsize\color{accentlight} Học viện Công nghệ Bưu chính Viễn thông \\ Khoa Công nghệ Thông tin 2}
+ \end{center}
+\end{frame}
+
+\end{document}

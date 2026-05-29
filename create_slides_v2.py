@@ -113,7 +113,7 @@ def main():
     tb = s.shapes.add_textbox(Inches(1), Inches(2), Inches(8), Inches(2.5))
     tf = tb.text_frame; tf.word_wrap = True
     p = tf.paragraphs[0]; p.text = "HỆ THỐNG THƯƠNG MẠI ĐIỆN TỬ\nSMARTVN"; p.font.size = Pt(38); p.font.bold = True; p.font.color.rgb = WHITE
-    p2 = tf.add_paragraph(); p2.text = "Kiến trúc Microservices • Spring Boot • Mobile Android • AI Recommendation"; p2.font.size = Pt(16); p2.font.color.rgb = ACCENT_LIGHT; p2.space_before = Pt(14)
+    p2 = tf.add_paragraph(); p2.text = "Kiến trúc Microservices • Spring Boot • Mobile Android"; p2.font.size = Pt(16); p2.font.color.rgb = ACCENT_LIGHT; p2.space_before = Pt(14)
     tb2 = s.shapes.add_textbox(Inches(1), Inches(5.5), Inches(8), Inches(1))
     tf2 = tb2.text_frame; tf2.paragraphs[0].text = "Học viện Công nghệ Bưu chính Viễn thông — Khoa CNTT2\nThành phố Hồ Chí Minh, Tháng 6 năm 2026"; tf2.paragraphs[0].font.size = Pt(13); tf2.paragraphs[0].font.color.rgb = ACCENT_LIGHT
 
@@ -124,7 +124,7 @@ def main():
         "## 2. Kiến trúc Microservices",
         "## 3. Ứng dụng Mobile Android (MVVM)",
         "## 4. Giao diện Mobile",
-        "## 5. Recommendation System",
+        
         "## 6. Kiểm thử & Hiệu năng",
         "## 7. Kết luận",
     ])
@@ -151,7 +151,7 @@ def main():
         "## Hướng tiếp cận: Microservices",
         "- Spring Boot 3.3 + Spring Cloud",
         "- Mobile Android native (Java, MVVM)",
-        "- AI Recommendation (PhoBERT + ALS)",
+        
     ])
 
     # ── 5. Quy trình trước/sau ─────────────────────────────
@@ -182,7 +182,7 @@ def main():
         ["Product Service", "8082", "Sản phẩm + Redis cache"],
         ["Order Service", "8083", "Đơn hàng + Thanh toán VNPay"],
         ["Admin Service", "8084", "Quản trị, dashboard"],
-        ["Recommend Service", "8085", "AI Recommendation (PhoBERT+ALS)"],
+        
     ]
     for i, h in enumerate(headers):
         cell = table.cell(0, i); cell.text = h; cell.fill.solid(); cell.fill.fore_color.rgb = PRIMARY
@@ -209,8 +209,8 @@ def main():
         "- React + Vite (Customer & Admin Web)",
         "- Android Java + MVVM (Mobile)",
         "",
-        "## AI & DevOps",
-        "- PhoBERT + ALS Hybrid Recommendation",
+        "## DevOps",
+        
         "- Docker Compose deployment",
         "- Grafana k6 performance testing",
     ])
@@ -250,7 +250,7 @@ def main():
         "",
         "## Khách hàng (Logged-in)",
         "- Tất cả quyền Guest +",
-        "- Nhận gợi ý AI (PhoBERT + ALS)",
+        
         "- Giỏ hàng → Đặt hàng → Thanh toán VNPay",
         "- Đánh giá sản phẩm",
         "- Quản lý tài khoản, địa chỉ, lịch sử đơn",
@@ -292,7 +292,7 @@ def main():
         "- ViewPager2 cho gallery ảnh",
         "- Thông số kỹ thuật (RAM, pin, màn hình...)",
         "- Nút Add to Cart + Buy Now",
-        "- Gợi ý sản phẩm tương tự (AI)",
+        
     ], left=Inches(6.5), top=Inches(1.3), width=Inches(6.3))
 
     # ── 15. Mobile: Cart & Checkout ────────────────────────
@@ -335,39 +335,16 @@ def main():
         "- Viết review + ảnh",
     ], left=Inches(6.5), top=Inches(1.3), width=Inches(6.3))
 
-    # ── 17. Section: Recommendation ────────────────────────
-    s = prs.slides.add_slide(prs.slide_layouts[6])
-    add_bg(s, ACCENT)
-    tb = s.shapes.add_textbox(Inches(1), Inches(3), Inches(10), Inches(1.5))
-    tf = tb.text_frame
-    p = tf.paragraphs[0]; p.text = "04  AI RECOMMENDATION SYSTEM"; p.font.size = Pt(36); p.font.bold = True; p.font.color.rgb = WHITE
 
-    # ── 18. Recommendation ─────────────────────────────────
-    s = new_slide(prs, "HYBRID RECOMMENDATION — PhoBERT + ALS")
-    bullets(s, [
-        "## Content-Based: PhoBERT",
-        "- Pre-trained Vietnamese language model (VinAI)",
-        "- Phân tích mô tả sản phẩm → text embeddings",
-        "- Tính similarity giữa sản phẩm",
-        "",
-        "## Collaborative: ALS",
-        "- Alternating Least Squares",
-        "- Học từ lịch sử mua hàng user-item matrix",
-        "- Dự đoán user sẽ thích sản phẩm nào",
-        "",
-        "## Hybrid Merge",
-        "- Kết hợp điểm từ cả 2 model",
-        "- Cold start: user mới → Content-Based",
-        "- Warm user → Collaborative ưu tiên hơn",
-    ])
-    add_image(s, img("img-040.jpg"), Inches(7), Inches(1.2), Inches(5.8), Inches(5.5))
+
+
 
     # ── 19. Section: Testing ───────────────────────────────
     s = prs.slides.add_slide(prs.slide_layouts[6])
     add_bg(s, ACCENT)
     tb = s.shapes.add_textbox(Inches(1), Inches(3), Inches(10), Inches(1.5))
     tf = tb.text_frame
-    p = tf.paragraphs[0]; p.text = "05  KIỂM THỬ & HIỆU NĂNG"; p.font.size = Pt(36); p.font.bold = True; p.font.color.rgb = WHITE
+    p = tf.paragraphs[0]; p.text = "05  KẾT LUẬN"; p.font.size = Pt(36); p.font.bold = True; p.font.color.rgb = WHITE
 
     # ── 20. Benchmark ──────────────────────────────────────
     s = new_slide(prs, "KẾT QUẢ BENCHMARK — REDIS CACHE")
@@ -399,7 +376,7 @@ def main():
     add_bg(s, ACCENT)
     tb = s.shapes.add_textbox(Inches(1), Inches(3), Inches(10), Inches(1.5))
     tf = tb.text_frame
-    p = tf.paragraphs[0]; p.text = "06  KẾT LUẬN"; p.font.size = Pt(36); p.font.bold = True; p.font.color.rgb = WHITE
+    p = tf.paragraphs[0]; p.text = "06  CẢM ƠN"; p.font.size = Pt(36); p.font.bold = True; p.font.color.rgb = WHITE
 
     # ── 22. Kết quả ────────────────────────────────────────
     s = new_slide(prs, "KẾT QUẢ & HƯỚNG PHÁT TRIỂN")
@@ -407,7 +384,7 @@ def main():
         "## Kết quả đạt được",
         "- Hệ thống TMĐT SmartVN hoàn chỉnh (7 microservices)",
         "- Ứng dụng Mobile Android native (MVVM) đầy đủ tính năng",
-        "- AI Recommendation (PhoBERT + ALS Hybrid)",
+        
         "- Hiệu năng: Redis cache giảm latency 5.5x",
         "- Bảo mật: JWT + OAuth2 + Circuit Breaker",
         "- Docker Compose deployment",

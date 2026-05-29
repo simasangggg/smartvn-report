@@ -471,7 +471,6 @@ User Service chịu trách nhiệm quản lý toàn bộ thông tin người dù
 **Theo dõi tương tác:**
 
 - Ghi nhận hành vi người dùng (xem sản phẩm, thêm vào giỏ hàng).
-- Xuất dữ liệu tương tác cho hệ thống gợi ý AI.
 
 : Các endpoint của User Service {#tbl:user-api}
 
@@ -598,11 +597,6 @@ Admin Service tổng hợp dữ liệu từ tất cả các service khác để 
 
 - Gọi Order Service để quản lý đơn hàng, doanh thu.
 
-**Xuất dữ liệu AI:**
-
-- Xuất danh sách sản phẩm cho hệ thống gợi ý.
-- Xuất dữ liệu tương tác người dùng.
-- Xuất dữ liệu đơn hàng cho training model.
 
 : Các endpoint của Admin Service {#tbl:admin-api}
 
@@ -2539,13 +2533,11 @@ Qua quá trình nghiên cứu, thiết kế và hiện thực hóa, đồ án đ
 - Thiết lập monitoring với Prometheus và Grafana.
 - Implement message queue (RabbitMQ, Kafka).
 - Tối ưu frontend với lazy loading, code splitting và SSR.
-- Nâng cấp ứng dụng Android: thêm chatbot AI, AR xem sản phẩm, barcode scanner.
 
 **Dài hạn:**
 
 - Triển khai trên Kubernetes.
 - Implement auto-scaling dựa trên metrics.
-- Tích hợp AI recommendation engine.
 - Triển khai trên cloud provider (AWS, GCP, Azure).
 - Phát triển phiên bản iOS (Swift/SwiftUI) và cross-platform (Flutter/React Native).
 - Tích hợp ví điện tử (MoMo, ZaloPay) và Apple Pay / Google Pay.

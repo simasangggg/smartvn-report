@@ -1894,916 +1894,1724 @@ Dashboard cung cấp cái nhìn tổng quan về hệ thống:
 \newpage
 
 
+# ỨNG DỤNG MOBILE — ANDROID CLIENT
 
-# CHƯƠNG 5: ỨNG DỤNG MOBILE — ANDROID CLIENT
+## Tổng quan ứng dụng Mobile
 
-## 5.1 Giới thiệu tổng quan
+Ứng dụng mobile **SmartVN** là thành phần không thể thiếu trong hệ thống thương mại điện tử, đóng vai trò là cầu nối trực tiếp giữa người dùng và hệ thống backend microservices. Được phát triển bằng **Java** trên nền tảng **Android SDK**, ứng dụng cung cấp trải nghiệm mua sắm liền mạch, tối ưu cho thiết bị di động.
 
-Ứng dụng mobile SmartVN là thành phần trung tâm trong hệ thống thương mại điện tử, đóng vai trò là cầu nối trực tiếp giữa người dùng và hệ thống backend microservices. Được phát triển bằng ngôn ngữ Java trên nền tảng Android SDK, ứng dụng cung cấp trải nghiệm mua sắm liền mạch, tối ưu cho thiết bị di động.
+### Vai trò trong hệ thống
 
-Trong kiến trúc Microservices của SmartVN, ứng dụng mobile hoạt động ở tầng Client cùng với các ứng dụng frontend web. Tuy nhiên, mobile client có những đặc điểm riêng biệt:
+Trong kiến trúc Microservices của SmartVN, ứng dụng mobile hoạt động ở **tầng Client** cùng với các frontend web. Tuy nhiên, mobile client có những đặc điểm riêng biệt:
 
-- **Trải nghiệm native:** Tận dụng đầy đủ khả năng phần cứng của thiết bị di động như camera, GPS, cảm biến vân tay, và hệ thống thông báo đẩy.
-- **Khả năng hoạt động ngoại tuyến:** Lưu trữ dữ liệu cục bộ cho phép người dùng xem sản phẩm đã lưu trữ ngay cả khi mất kết nối mạng.
-- **Hiệu năng tối ưu:** Sử dụng các thành phần Android gốc, không qua lớp trung gian như WebView, đảm bảo trải nghiệm mượt mà.
-- **Thông báo đẩy:** Nhận thông báo về trạng thái đơn hàng, khuyến mãi theo thời gian thực.
+- **Trải nghiệm native:** Tận dụng đầy đủ khả năng phần cứng (camera, GPS, push notification, vân tay).
+- **Offline capability:** Lưu trữ cục bộ với Room Database, cho phép xem sản phẩm đã cache khi mất mạng.
+- **Hiệu năng tối ưu:** Sử dụng native Android components, không qua lớp interpretive như WebView.
+- **Push Notification:** Nhận thông báo đơn hàng, khuyến mãi real-time qua Firebase Cloud Messaging (FCM).
 
-### 5.1.1 Phạm vi chức năng
+### Phạm vi chức năng
 
 Ứng dụng mobile SmartVN cung cấp đầy đủ các chức năng nghiệp vụ cho người dùng cuối:
 
-- Đăng ký và đăng nhập (hỗ trợ xác thực qua Google).
-- Duyệt sản phẩm theo danh mục, tìm kiếm, lọc theo giá và đánh giá.
-- Xem chi tiết sản phẩm với hình ảnh, mô tả, đánh giá từ người dùng khác.
-- Quản lý giỏ hàng (thêm, sửa số lượng, xóa sản phẩm).
-- Đặt hàng và chọn địa chỉ giao hàng.
-- Thanh toán trực tuyến qua cổng VNPay.
-- Theo dõi trạng thái đơn hàng và lịch sử mua hàng.
-- Quản lý tài khoản cá nhân (cập nhật thông tin, đổi mật khẩu, quản lý địa chỉ).
+- **Đăng ký / Đăng nhập:** Hỗ trợ đăng nhập bằng email-mật khẩu, OAuth2 (Google, GitHub).
+- **Duyệt sản phẩm:** Danh mục, tìm kiếm, lọc theo giá/thương hiệu/đánh giá.
+- **Chi tiết sản phẩm:** Hình ảnh, mô tả, đánh giá, sản phẩm liên quan.
+- **Giỏ hàng:** Thêm/sửa/xóa sản phẩm, lưu giỏ hàng cục bộ.
+- **Đặt hàng:** Xác nhận đơn hàng, chọn địa chỉ giao hàng.
+- **Thanh toán:** Tích hợp VNPay qua Intent mở trình duyệt / WebView.
+- **Quản lý đơn hàng:** Theo dõi trạng thái, lịch sử mua hàng.
+- **Tài khoản cá nhân:** Cập nhật thông tin, đổi mật khẩu, quản lý địa chỉ.
 
-### 5.1.2 Mục tiêu phát triển
+## Kiến trúc ứng dụng Android (MVVM)
 
-- Xây dựng ứng dụng Android native với kiến trúc MVVM, đảm bảo tính maintainability và scalability.
-- Tích hợp đầy đủ với hệ thống backend microservices thông qua API Gateway.
-- Cung cấp trải nghiệm người dùng mượt mà, tuân thủ nguyên tắc Material Design 3.
-- Hỗ trợ chế độ ngoại tuyến (offline-first) cho các thao tác xem sản phẩm và quản lý giỏ hàng.
-- Đảm bảo bảo mật với xác thực JWT và cơ chế refresh token tự động.
+### Giới thiệu mô hình MVVM
 
-## 5.2 Phương pháp phát triển
+Ứng dụng SmartVN Android được thiết kế theo mô hình **MVVM (Model-View-ViewModel)** — kiến trúc được Google khuyến nghị cho phát triển Android hiện đại. MVVM tách biệt rõ ràng ba tầng:
 
-### 5.2.1 Phương pháp nghiên cứu lý thuyết
-
-- Nghiên cứu kiến trúc MVVM (Model-View-ViewModel) và các nguyên tắc thiết kế Android hiện đại.
-- Tìm hiểu về các thư viện Retrofit 2, Room Database, LiveData, ViewModel trong hệ sinh thái Android.
-- Nghiên cứu nguyên tắc Material Design 3 của Google.
-- Tham khảo tài liệu chính thức của Android Developers và các best practices.
-
-### 5.2.2 Phương pháp nghiên cứu thực nghiệm
-
-- Thiết kế giao diện người dùng theo nguyên tắc UX mobile.
-- Xây dựng prototype và kiểm thử trên nhiều kích thước màn hình.
-- Tích hợp với backend API và kiểm thử luồng dữ liệu end-to-end.
-- Đánh giá hiệu năng và trải nghiệm người dùng trên thiết bị thật.
-
-## 5.3 Đóng góp của đề tài
-
-### 5.3.1 Về mặt kỹ thuật
-
-- Triển khai thành công kiến trúc MVVM với Android Architecture Components.
-- Xây dựng cơ chế cache-first với NetworkBoundResource, kết hợp giữa Room Database và Retrofit.
-- Thiết kế hệ thống xác thực JWT với khả năng refresh token tự động.
-- Tích hợp thanh toán VNPay thông qua Chrome Custom Tab.
-
-### 5.3.2 Về mặt thực tiễn
-
-- Cung cấp ứng dụng mua sắm hoàn chỉnh trên nền tảng di động.
-- Nâng cao trải nghiệm người dùng với giao diện Material Design 3 hiện đại.
-- Hỗ trợ người dùng mua sắm mọi lúc, mọi nơi thông qua thiết bị di động.
-
-## 5.4 Nội dung chương
-
-Chương này trình bày toàn bộ quá trình phát triển ứng dụng mobile SmartVN, bao gồm:
-
-- Phần 5: Giới thiệu tổng quan, mục tiêu và phạm vi ứng dụng.
-- Phần 6: Cơ sở lý thuyết và công nghệ sử dụng (MVVM, Retrofit, Room, Material Design 3).
-- Phần 7: Phân tích và thiết kế (Use Case, Sequence Diagram, thiết kế giao diện, cơ sở dữ liệu cục bộ).
-- Phần 8: Xây dựng ứng dụng (giao diện các màn hình, tích hợp API, xử lý ngoại lệ).
-# CHƯƠNG 6: CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ MOBILE
-
-## 6.1 Kiến trúc MVVM (Model-View-ViewModel)
-
-### 6.1.1 Giới thiệu
-
-MVVM là mô hình kiến trúc phần mềm được Google khuyến nghị cho phát triển ứng dụng Android hiện đại. Mô hình này tách biệt rõ ràng ba tầng: Model (quản lý dữ liệu), View (hiển thị giao diện), và ViewModel (cầu nối logic giữa hai tầng). Việc tách biệt này giúp mã nguồn dễ bảo trì, dễ kiểm thử và giảm thiểu các lỗi liên quan đến vòng đời Activity/Fragment.
-
-### 6.1.2 Nguyên lý hoạt động
-
-**Tầng Model (Data Layer):**
+**Model (Data Layer):**
 
 - Quản lý dữ liệu và business logic.
-- Bao gồm Repository, Remote Data Source (gọi API), Local Data Source (cơ sở dữ liệu cục bộ).
-- Chịu trách nhiệm quyết định lấy dữ liệu từ bộ nhớ đệm hay từ server.
+- Bao gồm Repository, Remote Data Source (API), Local Data Source (Room Database).
+- Chịu trách nhiệm quyết định lấy dữ liệu từ cache hay server.
 
-**Tầng View (UI Layer):**
+**View (UI Layer):**
 
 - Hiển thị dữ liệu và nhận tương tác người dùng.
 - Bao gồm Activity, Fragment, XML Layout.
-- Quan sát (observe) LiveData từ ViewModel để cập nhật giao diện tự động.
+- Quan sát (observe) LiveData từ ViewModel để cập nhật UI tự động.
 
-**Tầng ViewModel (Logic Layer):**
+**ViewModel (Logic Layer):**
 
 - Cầu nối giữa View và Model.
-- Lưu trữ và quản lý dữ liệu giao diện, tồn tại qua các thay đổi cấu hình (như xoay màn hình).
-- Cung cấp LiveData cho View quan sát, gọi Repository để lấy dữ liệu.
+- Lưu trữ và quản lý dữ liệu UI, tồn tại qua vòng đời configuration changes.
+- Cung cấp LiveData cho View observe, gọi Repository để lấy dữ liệu.
 
-### 6.1.3 Lợi ích của MVVM
+### Sơ đồ luồng dữ liệu MVVM
 
-- **Testability:** ViewModel có thể kiểm thử độc lập, không cần Android framework.
-- **Lifecycle awareness:** LiveData tự động hủy đăng ký khi View bị hủy, tránh rò rỉ bộ nhớ.
-- **Separation of concerns:** Logic giao diện tách biệt hoàn toàn khỏi business logic.
-- **Configuration changes:** ViewModel sống sót qua xoay màn hình, không mất dữ liệu.
-- **Reactive UI:** LiveData và Observer pattern giúp giao diện tự động cập nhật khi dữ liệu thay đổi.
+```
+┌─────────────────────────────────────────────────┐
+│                    VIEW                         │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
+│  │ Activity  │  │ Fragment │  │   XML    │      │
+│  └─────┬─────┘  └─────┬─────┘  └──────────┘      │
+│        │              │                          │
+│        │  observe     │  observe                 │
+│        ▼              ▼                          │
+│  ┌──────────────────────────────┐                │
+│  │         VIEWMODEL           │                │
+│  │  ┌─────────┐ ┌───────────┐  │                │
+│  │  │LiveData │ │  State    │  │                │
+│  │  └────┬────┘ └───────────┘  │                │
+│  │       │    call              │                │
+│  └───────┼──────────────────────┘                │
+│          ▼                                       │
+│  ┌──────────────────────────────┐                │
+│  │        REPOSITORY           │                │
+│  │  ┌──────────┐ ┌───────────┐ │                │
+│  │  │  Remote  │ │   Local   │ │                │
+│  │  │  (API)   │ │  (Room)   │ │                │
+│  │  └────┬─────┘ └─────┬─────┘ │                │
+│  └───────┼──────────────┼───────┘                │
+└──────────┼──────────────┼────────────────────────┘
+           ▼              ▼
+    ┌────────────┐  ┌────────────┐
+    │  Backend   │  │   SQLite   │
+    │  (REST)    │  │  (Room DB) │
+    └────────────┘  └────────────┘
+```
 
-## 6.2 Retrofit 2 — HTTP Client
+### Lợi ích của MVVM trong dự án
 
-### 6.2.1 Giới thiệu
+- **Testability:** ViewModel có thể unit test độc lập, không cần Android framework.
+- **Lifecycle awareness:** LiveData tự động unsubscribe khi View bị destroy, tránh memory leak.
+- **Separation of concerns:** UI logic tách biệt hoàn toàn khỏi business logic.
+- **Configuration changes:** ViewModel sống sót qua rotation màn hình, không mất dữ liệu.
+- **Reactive UI:** LiveData và Observer pattern giúp UI tự động cập nhật khi dữ liệu thay đổi.
+## Công nghệ và thư viện sử dụng
 
-Retrofit 2 là thư viện HTTP client mạnh mẽ do Square phát triển, giúp gọi REST API một cách an toàn về kiểu dữ liệu (type-safe) và rõ ràng. Đây là thư viện phổ biến nhất trong phát triển Android để giao tiếp với backend thông qua giao thức HTTP/REST.
+### Android SDK & Java
 
-### 6.2.2 Đặc điểm nổi bật
+Ứng dụng được phát triển bằng **Java 17** trên nền tảng **Android SDK API 26+ (Android 8.0 Oreo)**, đảm bảo khả năng tương thích với hơn **95% thiết bị Android** đang hoạt động trên thị trường.
 
-- **Type-safe HTTP calls:** Định nghĩa API dưới dạng interface Java, Retrofit tự động chuyển đổi thành các yêu cầu HTTP.
-- **Converter linh hoạt:** Hỗ trợ nhiều định dạng dữ liệu (JSON, XML) thông qua các converter như Gson, Moshi.
-- **Tích hợp OkHttp:** Sử dụng OkHttp làm HTTP client底层, hỗ trợ interceptors cho việc xử lý token, logging.
-- **Hỗ trợ bất đồng bộ:** Tích hợp với Callback và RxJava để xử lý phản hồi từ server một cách bất đồng bộ.
+**Cấu hình dự án (build.gradle — app module):**
 
-### 6.2.3 Interceptor và JWT Authentication
+```groovy
+android {
+    compileSdk 34
+    defaultConfig {
+        applicationId "com.smartvn.app"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+    buildFeatures {
+        viewBinding true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+```
 
-Trong kiến trúc microservices, mọi yêu cầu từ client đều đi qua API Gateway. Để xác thực người dùng, mỗi yêu cầu HTTP cần đính kèm JWT token trong header Authorization. Cơ chế Interceptor của Retrofit cho phép tự động thêm token vào mọi yêu cầu mà không cần thao tác thủ công ở từng API call.
+**Lý do chọn Java thay vì Kotlin:**
 
-Ngoài ra, hệ thống sử dụng Authenticator để tự động làm mới token khi nhận được phản hồi 401 (Unauthorized) từ server, đảm bảo trải nghiệm người dùng liền mạch.
+- Phù hợp với chương trình đào tạo môn Lập trình Mobile (Java là ngôn ngữ nền tảng).
+- Cộng đồng lớn, tài liệu phong phú, dễ tìm kiếm hỗ trợ.
+- Hệ sinh thái thư viện Android đều hỗ trợ Java.
+- Java vẫn là ngôn ngữ được sử dụng rộng rãi nhất trong phát triển Android tại Việt Nam.
 
-## 6.3 Room Database — Lưu trữ cục bộ
+### Retrofit 2 — HTTP Client
 
-### 6.3.1 Giới thiệu
+**Retrofit 2** là thư viện HTTP client mạnh mẽ của Square, giúp gọi REST API một cách type-safe và clean.
 
-Room là tầng abstraction trên SQLite, được Google phát triển như một phần của Android Architecture Components. Room cung cấp xác minh truy vấn SQL tại thời điểm biên dịch (compile-time SQL verification) và tích hợp chặt chẽ với LiveData, giúp truy xuất dữ liệu cục bộ một cách an toàn và hiệu quả.
+**Cấu hình Retrofit:**
 
-### 6.3.2 Các thành phần chính
+```java
+public class ApiClient {
+    private static final String BASE_URL = "http://10.0.2.2:8080/";
+    private static Retrofit retrofit = null;
 
-- **Entity:** Đại diện cho một bảng trong cơ sở dữ liệu, được ánh xạ từ lớp Java.
-- **DAO (Data Access Object):** Định nghĩa các phương thức truy xuất dữ liệu (truy vấn, chèn, cập nhật, xóa).
-- **Database:** Lớp chính quản lý cơ sở dữ liệu, cung cấp truy cập đến các DAO.
+    public static Retrofit getClient() {
+        if (retrofit == null) {
+            OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .addInterceptor(new AuthInterceptor())
+                .addInterceptor(new HttpLoggingInterceptor()
+                    .setLevel(HttpLoggingInterceptor.Level.BODY))
+                .build();
 
-### 6.3.3 Chiến lược Cache-First (NetworkBoundResource)
+            retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        }
+        return retrofit;
+    }
+}
+```
 
-Hệ thống sử dụng mô hình NetworkBoundResource để quản lý luồng dữ liệu:
+**Định nghĩa API Interface:**
 
-1. **Ưu tiên đọc từ bộ nhớ đệm:** Hiển thị dữ liệu từ Room Database ngay lập tức.
-2. **Kiểm tra thời hạn:** Nếu dữ liệu quá cũ (vượt quá TTL), gửi yêu cầu đến server.
-3. **Cập nhật từ server:** Khi nhận dữ liệu mới, lưu vào Room Database và tự động cập nhật giao diện.
-4. **Xử lý ngoại tuyến:** Nếu mất mạng, hiển thị dữ liệu từ bộ nhớ đệm và thông báo cho người dùng.
+```java
+public interface ApiService {
+    // Sản phẩm
+    @GET("api/v1/products")
+    Call<ApiResponse<List<Product>>> getProducts(
+        @Query("page") int page,
+        @Query("size") int size,
+        @Query("category") String category
+    );
 
-Chiến lược này giúp ứng dụng phản hồi nhanh, giảm tải cho server, và hoạt động tốt ngay cả khi mất kết nối mạng.
+    @GET("api/v1/products/{id}")
+    Call<ApiResponse<Product>> getProductDetail(
+        @Path("id") Long productId
+    );
 
-## 6.4 LiveData và ViewModel
+    @GET("api/v1/products/search")
+    Call<ApiResponse<List<Product>>> searchProducts(
+        @Query("keyword") String keyword
+    );
 
-### 6.4.1 LiveData
+    // Người dùng
+    @POST("api/v1/auth/login")
+    Call<ApiResponse<LoginResponse>> login(
+        @Body LoginRequest request
+    );
 
-LiveData là một lớp dữ liệu có thể quan sát (observable data holder), nhận thức về vòng đời của Android component. LiveData tự động:
+    @POST("api/v1/auth/register")
+    Call<ApiResponse<Void>> register(
+        @Body RegisterRequest request
+    );
 
-- Hủy đăng ký observer khi Activity/Fragment bị hủy.
-- Không gửi dữ liệu khi View không ở trạng thái hoạt động.
-- Cập nhật giao diện trên main thread khi dữ liệu thay đổi.
+    // Đơn hàng
+    @POST("api/v1/orders")
+    Call<ApiResponse<Order>> createOrder(
+        @Body OrderRequest request
+    );
 
-### 6.4.2 ViewModel
+    @GET("api/v1/orders")
+    Call<ApiResponse<List<Order>>> getOrders();
 
-ViewModel là lớp chịu trách nhiệm chuẩn bị và quản lý dữ liệu cho Activity/Fragment. ViewModel:
+    // Giỏ hàng (server-side sync)
+    @POST("api/v1/cart/sync")
+    Call<ApiResponse<Void>> syncCart(
+        @Body List<CartItem> items
+    );
+}
+```
 
-- Tồn tại qua các thay đổi cấu hình (xoay màn hình, thay đổi ngôn ngữ).
-- Lưu trữ trạng thái giao diện (loading, error, data).
-- Giao tiếp với Repository để lấy và xử lý dữ liệu.
+**Interceptor xử lý JWT tự động:**
 
-## 6.5 ViewBinding
+```java
+public class AuthInterceptor implements Interceptor {
+    @Override
+    public Response intercept(Chain chain) throws IOException {
+        Request original = chain.request();
+        String token = TokenManager.getInstance().getAccessToken();
 
-ViewBinding là tính năng của Android Gradle Plugin, thay thế cho `findViewById()` truyền thống. ViewBinding tạo ra một lớp binding cho mỗi layout XML, cung cấp truy cập type-safe đến các view. Điều này giúp:
+        if (token != null) {
+            Request.Builder builder = original.newBuilder()
+                .header("Authorization", "Bearer " + token)
+                .header("Content-Type", "application/json");
+            return chain.proceed(builder.build());
+        }
+        return chain.proceed(original);
+    }
+}
+```
 
-- Loại bỏ lỗi NullPointerException khi truy cập view.
-- Phát hiện lỗi tại thời điểm biên dịch thay vì runtime.
-- Giảm thiểu boilerplate code.
+### Room Database — Lưu trữ cục bộ
 
-## 6.6 Glide — Tải hình ảnh
+**Room** là tầng abstraction trên SQLite, cung cấp compile-time SQL verification và tích hợp chặt chẽ với LiveData.
 
-Glide là thư viện tải và hiển thị hình ảnh hiệu quả, được tối ưu hóa cho Android. Các tính năng chính:
+**Entity — Bảng sản phẩm đã cache:**
 
-- **Memory và disk caching:** Tự động cache hình ảnh, giảm thiểu tải lại từ mạng.
-- **Placeholder và error image:** Hiển thị hình ảnh tạm thời khi đang tải và hình ảnh lỗi khi tải thất bại.
-- **Transformation:** Hỗ trợ cắt, resize, và chuyển đổi hình ảnh.
-- **Lifecycle awareness:** Tự động hủy tải hình ảnh khi Activity/Fragment bị hủy.
+```java
+@Entity(tableName = "cached_products")
+public class CachedProduct {
+    @PrimaryKey
+    @NonNull
+    private Long productId;
+    private String name;
+    private String description;
+    private Double price;
+    private String imageUrl;
+    private String category;
+    private Double rating;
+    private Integer reviewCount;
+    private Long cachedAt; // timestamp để kiểm tra TTL
 
-## 6.7 Material Design 3
+    // Constructors, getters, setters
+}
+```
 
-### 6.7.1 Giới thiệu
+**Entity — Giỏ hàng cục bộ:**
 
-Material Design 3 (Material You) là ngôn ngữ thiết kế mới nhất của Google, mang đến giao diện hiện đại, cá nhân hóa và nhất quán trên toàn hệ thống. Ứng dụng SmartVN tuân thủ các nguyên tắc của Material Design 3.
+```java
+@Entity(tableName = "cart_items")
+public class CartItemEntity {
+    @PrimaryKey(autoGenerate = true)
+    private int id;
 
-### 6.7.2 Các component sử dụng
+    @NonNull
+    private Long productId;
+    private String productName;
+    private String productImage;
+    private Double unitPrice;
+    private Integer quantity;
+    private Double totalPrice;
 
-- **TopAppBar:** Thanh tiêu đề với biểu tượng điều hướng.
-- **BottomNavigationView:** Thanh điều hướng dưới cùng (Trang chủ, Giỏ hàng, Đơn hàng, Tài khoản).
-- **CardView:** Hiển thị sản phẩm dạng thẻ với bóng đổ và hiệu ứng ripple.
-- **Chip:** Bộ lọc danh mục sản phẩm.
-- **FloatingActionButton:** Nút hành động chính (Thêm vào giỏ hàng).
+    // Constructors, getters, setters
+}
+```
+
+**DAO — Data Access Object:**
+
+```java
+@Dao
+public interface ProductDao {
+    @Query("SELECT * FROM cached_products ORDER BY rating DESC")
+    LiveData<List<CachedProduct>> getAllProducts();
+
+    @Query("SELECT * FROM cached_products WHERE category = :category")
+    LiveData<List<CachedProduct>> getProductsByCategory(String category);
+
+    @Query("SELECT * FROM cached_products WHERE name LIKE '%' || :keyword || '%'")
+    LiveData<List<CachedProduct>> searchProducts(String keyword);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertProducts(List<CachedProduct> products);
+
+    @Query("DELETE FROM cached_products WHERE cachedAt < :expireTime")
+    void deleteExpired(long expireTime);
+}
+
+@Dao
+public interface CartDao {
+    @Query("SELECT * FROM cart_items")
+    LiveData<List<CartItemEntity>> getAllCartItems();
+
+    @Query("SELECT SUM(totalPrice) FROM cart_items")
+    LiveData<Double> getCartTotal();
+
+    @Query("SELECT SUM(quantity) FROM cart_items")
+    LiveData<Integer> getCartItemCount();
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertCartItem(CartItemEntity item);
+
+    @Update
+    void updateCartItem(CartItemEntity item);
+
+    @Delete
+    void deleteCartItem(CartItemEntity item);
+
+    @Query("DELETE FROM cart_items")
+    void clearCart();
+}
+```
+
+**Database class:**
+
+```java
+@Database(
+    entities = {CachedProduct.class, CartItemEntity.class},
+    version = 1,
+    exportSchema = false
+)
+public abstract class SmartVNDatabase extends RoomDatabase {
+    private static volatile SmartVNDatabase INSTANCE;
+
+    public abstract ProductDao productDao();
+    public abstract CartDao cartDao();
+
+    public static SmartVNDatabase getInstance(Context context) {
+        if (INSTANCE == null) {
+            synchronized (SmartVNDatabase.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = Room.databaseBuilder(
+                        context.getApplicationContext(),
+                        SmartVNDatabase.class,
+                        "smartvn_database"
+                    )
+                    .fallbackToDestructiveMigration()
+                    .build();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+}
+```
+
+### LiveData & ViewModel
+
+**LiveData** cung cấp cơ chế observable data holder, tự động cập nhật UI khi dữ liệu thay đổi.
+
+**ViewModel — ProductViewModel:**
+
+```java
+public class ProductViewModel extends AndroidViewModel {
+    private final ProductRepository repository;
+    private final LiveData<List<Product>> products;
+    private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>();
+    private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
+
+    public ProductViewModel(@NonNull Application application) {
+        super(application);
+        SmartVNDatabase db = SmartVNDatabase.getInstance(application);
+        ProductDao productDao = db.productDao();
+        ApiService apiService = ApiClient.getClient().create(ApiService.class);
+        repository = new ProductRepository(apiService, productDao);
+        products = repository.getAllProducts();
+    }
+
+    public LiveData<List<Product>> getProducts() { return products; }
+    public LiveData<Boolean> getIsLoading() { return isLoading; }
+    public LiveData<String> getErrorMessage() { return errorMessage; }
+
+    public void refreshProducts() {
+        isLoading.setValue(true);
+        repository.refreshFromNetwork(new Callback() {
+            @Override
+            public void onSuccess() {
+                isLoading.postValue(false);
+            }
+
+            @Override
+            public void onError(String message) {
+                isLoading.postValue(false);
+                errorMessage.postValue(message);
+            }
+        });
+    }
+}
+```
+
+### ViewBinding
+
+**ViewBinding** thay thế `findViewById()` truyền thống, cung cấp compile-time type safety:
+
+```java
+// Thay vì: TextView tvName = findViewById(R.id.tv_product_name);
+// Sử dụng ViewBinding:
+ActivityProductDetailBinding binding = ActivityProductDetailBinding.inflate(getLayoutInflater());
+setContentView(binding.getRoot());
+
+binding.tvProductName.setText(product.getName());
+binding.tvProductPrice.setText(formatPrice(product.getPrice()));
+binding.tvProductRating.setText(String.valueOf(product.getRating()));
+```
+
+### Glide — Tải hình ảnh
+
+**Glide** là thư viện tải và hiển thị hình ảnh hiệu quả, hỗ trợ caching, placeholder và error image:
+
+```java
+Glide.with(context)
+    .load(product.getImageUrl())
+    .placeholder(R.drawable.ic_product_placeholder)
+    .error(R.drawable.ic_product_error)
+    .centerCrop()
+    .into(binding.ivProductImage);
+```
+
+### Material Design 3
+
+Ứng dụng tuân thủ **Material Design 3 (Material You)** — ngôn ngữ thiết kế mới nhất của Google:
+
+```xml
+<!-- themes.xml -->
+<style name="Theme.SmartVN" parent="Theme.Material3.Light.NoActionBar">
+    <item name="colorPrimary">@color/md_theme_primary</item>
+    <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
+    <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
+    <item name="colorSecondary">@color/md_theme_secondary</item>
+    <item name="colorSurface">@color/md_theme_surface</item>
+    <item name="colorSurfaceVariant">@color/md_theme_surfaceVariant</item>
+</style>
+```
+
+**Các component Material Design 3 sử dụng:**
+
+- **TopAppBar:** Thanh tiêu đề với navigation icon.
+- **BottomNavigationView:** Thanh điều hướng dưới cùng (Home, Cart, Orders, Profile).
+- **CardView:** Hiển thị sản phẩm dạng card với shadow và ripple effect.
+- **Chip:** Lọc danh mục sản phẩm.
+- **FloatingActionButton:** Nút "Thêm vào giỏ hàng" trên chi tiết sản phẩm.
 - **MaterialButton:** Các nút hành động (Đăng nhập, Đặt hàng, Thanh toán).
-- **TextInputLayout:** Trường nhập liệu với xác thực.
-- **Snackbar:** Thông báo ngắn hạn (đã thêm vào giỏ, lỗi mạng).
-
-### 6.7.3 Hệ thống màu sắc
-
-Ứng dụng sử dụng bảng màu Material Design 3 với tông màu chủ đạo:
-
-- **Màu chính (Primary):** Xanh lá cây — đại diện cho thương hiệu SmartVN.
-- **Màu bề mặt (Surface):** Trắng ngà — nền chính cho nội dung.
-- **Màu giá sản phẩm:** Đỏ — nổi bật cho giá tiền.
-- **Màu đánh giá:** Vàng — cho biểu tượng sao đánh giá.
-
-## 6.8 Firebase Cloud Messaging (FCM)
-
-### 6.8.1 Giới thiệu
-
-FCM là dịch vụ nhắn tin đám mây của Google, cho phép gửi thông báo đẩy (push notification) đến ứng dụng Android. Trong hệ thống SmartVN, FCM được sử dụng để:
-
-- Thông báo trạng thái đơn hàng (đã xác nhận, đang giao, đã giao).
-- Thông báo khuyến mãi và sự kiện.
-- Nhắc nhở giỏ hàng bỏ quên.
-
-## 6.9 Công nghệ và thư viện sử dụng
-
-### 6.9.1 Nền tảng phát triển
-
-- **Ngôn ngữ:** Java 17
-- **Android SDK:** API 26+ (Android 8.0 Oreo) — tương thích với hơn 95% thiết bị Android.
-- **Build Tool:** Gradle với Android Gradle Plugin.
-- **IDE:** Android Studio.
-
-### 6.9.2 Các thư viện chính
-
-| Thư viện | Phiên bản | Vai trò |
-|---|---|---|
-| Retrofit 2 | 2.9.0 | HTTP Client — gọi REST API |
-| OkHttp | 4.12.0 | HTTP engine, interceptor, logging |
-| Room | 2.6.1 | ORM — lưu trữ cơ sở dữ liệu cục bộ |
-| Lifecycle (ViewModel + LiveData) | 2.7.0 | Quản lý dữ liệu theo vòng đời |
-| Glide | 4.16.0 | Tải và hiển thị hình ảnh |
-| Material Components | 1.11.0 | UI components theo Material Design 3 |
-| Firebase Messaging | 23.4.0 | Thông báo đẩy |
-| ViewPager2 | 1.0.0 | Banner carousel, image slider |
-| SwipeRefreshLayout | 1.1.0 | Kéo để làm mới danh sách |
-
-### 6.9.3 Hỗ trợ hệ điều hành và triển khai
-
-- Ứng dụng hoạt động trên mọi thiết bị chạy Android 8.0 (API 26) trở lên.
-- Đóng gói thành tệp APK hoặc AAB (Android App Bundle) để triển khai trên Google Play Store.
-- Tương thích với kiến trúc ARM và x86.
-# CHƯƠNG 7: PHÂN TÍCH VÀ THIẾT KẾ ỨNG DỤNG MOBILE
-
-## 7.1 Thiết kế Use Case
-
-### 7.1.1 Sơ đồ Use Case tổng quan — Phía người dùng mobile
-
-![Sơ đồ Use Case tổng quan ứng dụng Mobile — Phía người dùng](images/mobile-use-case-user.png){#fig:mobile-uc-user width=90%}
-
-Như thể hiện trong @fig:mobile-uc-user, ứng dụng mobile SmartVN hỗ trợ các tác nhân chính:
-
-- **Khách vãng lai (Guest):** Có thể duyệt sản phẩm, tìm kiếm, xem chi tiết sản phẩm.
-- **Khách hàng đã đăng nhập (Customer):** Toàn bộ chức năng bao gồm giỏ hàng, đặt hàng, thanh toán, quản lý đơn hàng, tài khoản.
-
-### 7.1.2 Đặc tả Use Case
-
-**Use Case: Đăng ký tài khoản (UC-M01)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M01 |
-| Tác nhân | Khách vãng lai |
-| Mô tả | Cho phép người dùng tạo tài khoản mới trên ứng dụng SmartVN |
-| Điều kiện tiên quyết | Người dùng đang ở trang đăng ký |
-| Luồng sự kiện chính | 1. Người dùng nhập Họ, Tên, Email, Mật khẩu. 2. Nhấn nút "Đăng ký". 3. Hệ thống kiểm tra tính hợp lệ. 4. Hệ thống kiểm tra email đã tồn tại chưa. 5. Tạo tài khoản mới trong cơ sở dữ liệu. 6. Chuyển đến trang đăng nhập. |
-| Luồng thay thế | 4a. Email đã tồn tại: Hiển thị lỗi "Email này đã được sử dụng". 3a. Thông tin không hợp lệ: Hiển thị lỗi cụ thể cho từng trường. |
-| Điều kiện sau | Tài khoản mới được tạo, người dùng có thể đăng nhập |
-
-**Use Case: Đăng nhập (UC-M02)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M02 |
-| Tác nhân | Khách vãng lai |
-| Mô tả | Cho phép người dùng truy cập tài khoản bằng email/mật khẩu hoặc Google |
-| Điều kiện tiên quyết | Người dùng đang ở trang đăng nhập |
-| Luồng sự kiện chính | 1. Người dùng nhập email và mật khẩu. 2. Nhấn "Đăng nhập". 3. Hệ thống xác thực thông tin. 4. Hệ thống tạo JWT token. 5. Lưu token vào bộ nhớ an toàn. 6. Chuyển đến trang chủ. |
-| Luồng thay thế | 2a. Sai email/mật khẩu: Hiển thị lỗi. 2b. Tài khoản bị khóa: Thông báo tài khoản đã bị khóa. |
-| Điều kiện sau | Người dùng được xác thực, có thể truy cập các chức năng |
-
-**Use Case: Đăng nhập bằng Google (UC-M03)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M03 |
-| Tác nhân | Khách vãng lai |
-| Mô tả | Cho phép đăng nhập nhanh bằng tài khoản Google |
-| Điều kiện tiên quyết | Thiết bị có cài đặt Google Play Services |
-| Luồng sự kiện chính | 1. Nhấn nút "Đăng nhập bằng Google". 2. Hiển thị chọn tài khoản Google. 3. Người dùng chọn tài khoản. 4. Gửi ID token đến backend. 5. Backend xác thực và tạo JWT. 6. Lưu token, chuyển đến trang chủ. |
-| Điều kiện sau | Người dùng đăng nhập thành công |
-
-**Use Case: Duyệt và tìm kiếm sản phẩm (UC-M04)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M04 |
-| Tác nhân | Khách vãng lai, Khách hàng |
-| Mô tả | Xem danh sách sản phẩm, lọc theo danh mục, tìm kiếm theo từ khóa |
-| Điều kiện tiên quyết | Ứng dụng đã kết nối mạng hoặc có dữ liệu cache |
-| Luồng sự kiện chính | 1. Mở trang chủ. 2. Hệ thống hiển thị sản phẩm từ cache hoặc server. 3. Người dùng chọn danh mục (Chip filter). 4. Hệ thống lọc sản phẩm theo danh mục. 5. Hoặc nhập từ khóa vào ô tìm kiếm. 6. Hệ thống hiển thị kết quả tìm kiếm. |
-| Luồng thay thế | 1a. Mất mạng: Hiển thị dữ liệu từ cache, thông báo "Đang offline". |
-| Điều kiện sau | Người dùng xem được danh sách sản phẩm |
-
-**Use Case: Xem chi tiết sản phẩm (UC-M05)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M05 |
-| Tác nhân | Khách vãng lai, Khách hàng |
-| Mô tả | Xem thông tin chi tiết của một sản phẩm |
-| Điều kiện tiên quyết | Người dùng đã chọn một sản phẩm |
-| Luồng sự kiện chính | 1. Nhấn vào sản phẩm từ danh sách. 2. Hệ thống hiển thị chi tiết: hình ảnh (slider), tên, giá, đánh giá, mô tả, thông số kỹ thuật. 3. Xem đánh giá từ khách hàng khác. 4. Nhấn "Thêm vào giỏ" (nếu đã đăng nhập). |
-| Điều kiện sau | Người dùng xem được toàn bộ thông tin sản phẩm |
-
-**Use Case: Quản lý giỏ hàng (UC-M06)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M06 |
-| Tác nhân | Khách hàng |
-| Mô tả | Thêm, sửa số lượng, xóa sản phẩm khỏi giỏ hàng |
-| Điều kiện tiên quyết | Người dùng đã đăng nhập |
-| Luồng sự kiện chính | 1. Nhấn "Thêm vào giỏ" từ chi tiết sản phẩm. 2. Hệ thống thêm sản phẩm vào giỏ (lưu cục bộ). 3. Hiển thị Snackbar xác nhận. 4. Truy cập trang giỏ hàng. 5. Thay đổi số lượng hoặc xóa sản phẩm. 6. Hệ thống cập nhật tổng tiền tự động. |
-| Luồng thay thế | 1a. Sản phẩm đã có trong giỏ: Tăng số lượng. 5a. Vuốt để xóa: Xóa sản phẩm khỏi giỏ. |
-| Điều kiện sau | Giỏ hàng được cập nhật theo thao tác |
-
-**Use Case: Đặt hàng (UC-M07)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M07 |
-| Tác nhân | Khách hàng |
-| Mô tả | Tiến hành đặt hàng từ các sản phẩm trong giỏ |
-| Điều kiện tiên quyết | Giỏ hàng có ít nhất một sản phẩm |
-| Luồng sự kiện chính | 1. Nhấn "Tiến hành thanh toán". 2. Hiển thị trang checkout. 3. Nhập/chọn địa chỉ giao hàng. 4. Chọn phương thức thanh toán (COD / VNPay). 5. Nhấn "Đặt hàng". 6. Hệ thống kiểm tra tồn kho. 7. Tạo đơn hàng mới. 8. Xóa giỏ hàng. 9. Hiển thị xác nhận thành công. |
-| Luồng thay thế | 6a. Sản phẩm hết hàng: Hiển thị lỗi, yêu cầu cập nhật giỏ. 4a. Chọn VNPay: Mở trang thanh toán VNPay. |
-| Điều kiện sau | Đơn hàng được tạo, giỏ hàng được làm trống |
-
-**Use Case: Thanh toán VNPay (UC-M08)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M08 |
-| Tác nhân | Khách hàng |
-| Mô tả | Thanh toán đơn hàng qua cổng VNPay |
-| Điều kiện tiên quyết | Đơn hàng đã tạo, chọn phương thức VNPay |
-| Luồng sự kiện chính | 1. Hệ thống tạo URL thanh toán VNPay. 2. Mở Chrome Custom Tab với URL thanh toán. 3. Người dùng chọn ngân hàng và xác nhận thanh toán. 4. VNPay xử lý thanh toán. 5. Chuyển hướng về ứng dụng với kết quả. 6. Hệ thống cập nhật trạng thái đơn hàng. |
-| Điều kiện sau | Đơn hàng được xác nhận thanh toán |
-
-**Use Case: Theo dõi đơn hàng (UC-M09)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M09 |
-| Tác nhân | Khách hàng |
-| Mô tả | Xem danh sách và chi tiết đơn hàng đã đặt |
-| Điều kiện tiên quyết | Người dùng đã đăng nhập và có đơn hàng |
-| Luồng sự kiện chính | 1. Truy cập tab "Đơn hàng". 2. Hệ thống hiển thị danh sách đơn hàng. 3. Nhấn vào đơn hàng để xem chi tiết. 4. Hiển thị: trạng thái, danh sách sản phẩm, tổng tiền, địa chỉ giao hàng. |
-| Điều kiện sau | Người dùng xem được thông tin đơn hàng |
-
-**Use Case: Quản lý tài khoản (UC-M10)**
-
-| Mục | Mô tả |
-|---|---|
-| Mã số | UC-M10 |
-| Tác nhân | Khách hàng |
-| Mô tả | Cập nhật thông tin cá nhân, đổi mật khẩu, quản lý địa chỉ |
-| Điều kiện tiên quyết | Người dùng đã đăng nhập |
-| Luồng sự kiện chính | 1. Truy cập tab "Tài khoản". 2. Xem thông tin cá nhân. 3. Chỉnh sửa thông tin (tên, số điện thoại). 4. Đổi mật khẩu. 5. Quản lý danh sách địa chỉ giao hàng. 6. Đăng xuất. |
-| Điều kiện sau | Thông tin tài khoản được cập nhật |
-
-### 7.1.3 Bảng tổng hợp Use Case
-
-| Mã | Tên Use Case | Tác nhân | Mô tả ngắn |
-|---|---|---|---|
-| UC-M01 | Đăng ký tài khoản | Khách vãng lai | Tạo tài khoản mới |
-| UC-M02 | Đăng nhập | Khách vãng lai | Xác thực bằng email/mật khẩu |
-| UC-M03 | Đăng nhập Google | Khách vãng lai | Xác thực qua Google OAuth2 |
-| UC-M04 | Duyệt/tìm kiếm sản phẩm | Tất cả | Xem danh mục, tìm kiếm, lọc |
-| UC-M05 | Xem chi tiết sản phẩm | Tất cả | Xem thông tin đầy đủ sản phẩm |
-| UC-M06 | Quản lý giỏ hàng | Khách hàng | Thêm/sửa/xóa sản phẩm trong giỏ |
-| UC-M07 | Đặt hàng | Khách hàng | Tạo đơn hàng từ giỏ hàng |
-| UC-M08 | Thanh toán VNPay | Khách hàng | Thanh toán trực tuyến qua VNPay |
-| UC-M09 | Theo dõi đơn hàng | Khách hàng | Xem trạng thái và lịch sử đơn hàng |
-| UC-M10 | Quản lý tài khoản | Khách hàng | Cập nhật thông tin, đổi mật khẩu |
-
-## 7.2 Thiết kế Sequence Diagram
-
-### 7.2.1 Luồng đăng nhập
-
-![Biểu đồ trình tự — Đăng nhập bằng email/mật khẩu](images/mobile-seq-login.png){#fig:seq-login width=90%}
-
-**Mô tả luồng:**
-
-1. Người dùng nhập email và mật khẩu, nhấn "Đăng nhập".
-2. LoginActivity gọi LoginViewModel.login().
-3. LoginViewModel gọi AuthRepository.login().
-4. AuthRepository gửi POST request đến API Gateway (endpoint /api/v1/auth/login).
-5. API Gateway chuyển tiếp đến User Service.
-6. User Service xác thực thông tin, tạo JWT token.
-7. Phản hồi trả về: Access Token + Refresh Token + thông tin người dùng.
-8. AuthRepository lưu token vào TokenManager (SharedPreferences mã hóa).
-9. Cập nhật LiveData<AuthResult> với kết quả thành công.
-10. LoginActivity nhận kết quả, chuyển đến MainActivity.
-
-### 7.2.2 Luồng đăng ký
-
-![Biểu đồ trình tự — Đăng ký tài khoản](images/mobile-seq-register.png){#fig:seq-register width=90%}
-
-**Mô tả luồng:**
-
-1. Người dùng nhập thông tin (Họ, Tên, Email, Mật khẩu).
-2. RegisterActivity gọi RegisterViewModel.register().
-3. RegisterViewModel kiểm tra tính hợp lệ phía client.
-4. Gọi AuthRepository.register().
-5. Gửi POST request đến API Gateway (endpoint /api/v1/auth/register).
-6. Backend kiểm tra email đã tồn tại, tạo tài khoản mới.
-7. Phản hồi thành công.
-8. Chuyển đến trang đăng nhập với thông báo "Đăng ký thành công".
-
-### 7.2.3 Luồng xem sản phẩm (Cache-First)
-
-![Biểu đồ trình tự — Xem danh sách sản phẩm](images/mobile-seq-products.png){#fig:seq-products width=90%}
-
-**Mô tả luồng (cache hit):**
-
-1. HomeFragment hiển thị, gọi ProductViewModel.getProducts().
-2. ProductViewModel gọi ProductRepository.getProducts().
-3. Repository kiểm tra Room Database (cache).
-4. Nếu cache còn hạn (TTL 10 phút) → trả về dữ liệu từ cache.
-5. Cập nhật LiveData<List<Product>>.
-6. HomeFragment nhận dữ liệu, hiển thị RecyclerView.
-
-**Mô tả luồng (cache miss):**
-
-1-3. Tương tự, nhưng cache hết hạn hoặc trống.
-4. Repository gửi GET request đến API Gateway.
-5. Backend trả về danh sách sản phẩm.
-6. Repository lưu kết quả vào Room Database (cập nhật cache).
-7. Cập nhật LiveData, giao diện tự động refresh.
-
-### 7.2.4 Luồng đặt hàng
-
-![Biểu đồ trình tự — Đặt hàng và thanh toán](images/mobile-seq-order.png){#fig:seq-order width=90%}
-
-**Mô tả luồng:**
-
-1. Người dùng nhấn "Đặt hàng" từ CheckoutActivity.
-2. CheckoutViewModel gọi OrderRepository.createOrder().
-3. OrderRepository gửi POST request đến API Gateway (endpoint /api/v1/orders).
-4. Backend kiểm tra tồn kho, tạo đơn hàng.
-5. Phản hồi thông tin đơn hàng.
-6. Nếu chọn VNPay: Gọi API tạo payment URL.
-7. Mở Chrome Custom Tab với URL thanh toán VNPay.
-8. Người dùng hoàn tất thanh toán trên VNPay.
-9. VNPay chuyển hướng về ứng dụng.
-10. Backend xác nhận thanh toán, cập nhật trạng thái đơn hàng.
-11. Xóa giỏ hàng (Room Database).
-12. Chuyển đến trang xác nhận thành công.
-
-### 7.2.5 Luồng quản lý giỏ hàng
-
-![Biểu đồ trình tự — Quản lý giỏ hàng](images/mobile-seq-cart.png){#fig:seq-cart width=90%}
-
-**Mô tả luồng thêm vào giỏ:**
-
-1. Người dùng nhấn "Thêm vào giỏ" từ ProductDetailActivity.
-2. ProductDetailViewModel gọi CartRepository.addToCart().
-3. CartRepository kiểm tra sản phẩm đã có trong giỏ chưa (Room Database).
-4. Nếu có: tăng số lượng. Nếu chưa: thêm mới.
-5. Cập nhật Room Database trên background thread.
-6. LiveData<List<CartItemEntity>> tự động cập nhật.
-7. Hiển thị Snackbar "Đã thêm vào giỏ hàng" với nút "XEM GIỎ".
-
-### 7.2.6 Luồng đồng bộ giỏ hàng
-
-![Biểu đồ trình tự — Đồng bộ giỏ hàng với server](images/mobile-seq-sync.png){#fig:seq-sync width=90%}
-
-**Mô tả luồng:**
-
-1. Khi người dùng mở ứng dụng hoặc có kết nối mạng trở lại.
-2. CartRepository kiểm tra trạng thái đồng bộ.
-3. Nếu có dữ liệu cục bộ chưa đồng bộ: gửi POST request đến API Gateway.
-4. Backend cập nhật giỏ hàng trên server.
-5. Phản hồi đồng bộ thành công.
-
-## 7.3 Thiết kế giao diện người dùng (UI/UX)
-
-### 7.3.1 Hệ thống điều hướng
-
-Ứng dụng sử dụng kiến trúc Single Activity kết hợp với Navigation Component và BottomNavigationView. Cấu trúc bao gồm:
-
-- **MainActivity:** Container chính, chứa BottomNavigationView và Fragment container.
-- **Các Fragment chính:** HomeFragment, SearchFragment, CartFragment, OrderFragment, ProfileFragment.
-- **Các Activity riêng:** ProductDetailActivity, LoginActivity, RegisterActivity, CheckoutActivity, OrderDetailActivity.
-
-### 7.3.2 Thiết kế từng màn hình
-
-**Màn hình Trang chủ (HomeFragment):**
-
-![Thiết kế giao diện Trang chủ](images/mobile-ui-home.png){#fig:ui-home width=80%}
-
-Cấu trúc bao gồm:
-
-- **Top App Bar:** Logo SmartVN, biểu tượng tìm kiếm và thông báo.
-- **Banner Carousel:** Quảng cáo, khuyến mãi (tự động chuyển sau 5 giây).
-- **Category Chips:** Bộ lọc danh mục dạng thanh ngang cuộn được.
-- **Flash Sale Section:** Sản phẩm giảm giá với đồng hồ đếm ngược.
-- **Sản phẩm phổ biến:** Hiển thị dạng lưới 2 cột.
-
-**Màn hình Chi tiết sản phẩm (ProductDetailActivity):**
-
-![Thiết kế giao diện Chi tiết sản phẩm](images/mobile-ui-product-detail.png){#fig:ui-product-detail width=80%}
-
-Cấu trúc bao gồm:
-
-- **Image Slider:** Hiển thị nhiều hình ảnh sản phẩm với indicator dots.
+- **TextInputLayout:** Form nhập liệu với validation.
+- **Snackbar:** Thông báo ngắn (đã thêm vào giỏ, lỗi mạng).
+- **AlertDialog:** Xác nhận xóa, đăng xuất.
+
+### Tổng hợp dependencies
+
+```groovy
+dependencies {
+    // Android Core
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+
+    // Architecture Components
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime:2.7.0'
+
+    // Room Database
+    implementation 'androidx.room:room-runtime:2.6.1'
+    annotationProcessor 'androidx.room:room-compiler:2.6.1'
+
+    // Retrofit + Gson
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+
+    // Glide (Image loading)
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
+
+    // Firebase
+    implementation 'com.google.firebase:firebase-messaging:23.4.0'
+
+    // ViewPager2 (Onboarding, Image slider)
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
+}
+```
+## Thiết kế giao diện người dùng (UI/UX)
+
+### Hệ thống điều hướng
+
+Ứng dụng sử dụng **Single Activity Architecture** kết hợp với **Navigation Component** và **BottomNavigationView** để quản lý điều hướng:
+
+**Cấu trúc Activity/Fragment:**
+
+```
+MainActivity (Container duy nhất)
+├── HomeFragment          (Trang chủ — danh sách sản phẩm)
+├── SearchFragment        (Tìm kiếm sản phẩm)
+├── CartFragment          (Giỏ hàng)
+├── OrderFragment         (Đơn hàng của tôi)
+├── ProfileFragment       (Tài khoản cá nhân)
+│
+├── ProductDetailActivity (Chi tiết sản phẩm — Activity riêng)
+├── LoginActivity         (Đăng nhập — Activity riêng)
+├── RegisterActivity      (Đăng ký — Activity riêng)
+├── CheckoutActivity      (Thanh toán — Activity riêng)
+└── OrderDetailActivity   (Chi tiết đơn hàng — Activity riêng)
+```
+
+**Bottom Navigation Layout:**
+
+```xml
+<!-- activity_main.xml -->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:menu="@menu/bottom_nav_menu" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+```
+
+### Màn hình Trang chủ (HomeFragment)
+
+Trang chủ là màn hình đầu tiên người dùng nhìn thấy, được thiết kế theo phong cách **vertical scrolling** với nhiều section:
+
+**Cấu trúc layout:**
+
+- **Top App Bar:** Logo SmartVN + icon tìm kiếm + icon thông báo.
+- **Banner Carousel (ViewPager2):** Quảng cáo, khuyến mãi (auto-scroll 5 giây).
+- **Category Chips (ChipGroup):** Horizontal scroll — Tất cả, Điện tử, Thời trang, Gia dụng, Sách, Mỹ phẩm.
+- **Flash Sale Section:** Countdown timer + sản phẩm giảm giá (horizontal RecyclerView).
+- **Sản phẩm phổ biến:** Grid layout 2 cột (vertical RecyclerView).
+
+**Item sản phẩm (item_product.xml):**
+
+```xml
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/iv_product_image"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:scaleType="centerCrop" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/tv_product_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_product_price"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/price_red"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginTop="4dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <RatingBar
+                    android:id="@+id/rating_bar"
+                    style="?android:attr/ratingBarStyleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:isIndicator="true"
+                    android:numStars="5"
+                    android:stepSize="0.1" />
+
+                <TextView
+                    android:id="@+id/tv_review_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginStart="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
+```
+
+### Màn hình Chi tiết sản phẩm (ProductDetailActivity)
+
+Màn hình chi tiết sản phẩm cung cấp đầy đủ thông tin và hành động:
+
+**Cấu trúc layout:**
+
+- **Image Slider (ViewPager2):** Hiển thị nhiều hình ảnh sản phẩm, indicator dots.
 - **Thông tin cơ bản:** Tên sản phẩm, giá, đánh giá, số lượng đã bán.
-- **Mô tả sản phẩm:** Văn bản mở rộng (xem thêm / thu gọn).
-- **Đánh giá từ khách hàng:** Danh sách đánh giá.
+- **Mô tả sản phẩm:** Expandable text (xem thêm / thu gọn).
+- **Thông số kỹ thuật:** Bảng thông số dạng key-value.
+- **Đánh giá từ khách hàng:** Danh sách đánh giá (RecyclerView).
 - **Bottom Bar cố định:** Giá + nút "Thêm vào giỏ" + nút "Mua ngay".
 
-**Màn hình Giỏ hàng (CartFragment):**
+**Xử lý nút "Thêm vào giỏ":**
 
-![Thiết kế giao diện Giỏ hàng](images/mobile-ui-cart.png){#fig:ui-cart width=80%}
+```java
+binding.btnAddToCart.setOnClickListener(v -> {
+    CartItemEntity item = new CartItemEntity();
+    item.setProductId(product.getId());
+    item.setProductName(product.getName());
+    item.setProductImage(product.getImageUrl());
+    item.setUnitPrice(product.getPrice());
+    item.setQuantity(1);
+    item.setTotalPrice(product.getPrice());
 
-Cấu trúc bao gồm:
+    cartViewModel.addToCart(item);
 
-- **RecyclerView:** Danh sách sản phẩm với thao tác vuốt để xóa.
-- **Mỗi item:** Ảnh sản phẩm, tên, giá, nút tăng/giảm số lượng, tổng tiền dòng.
+    Snackbar.make(binding.getRoot(),
+            "Đã thêm vào giỏ hàng", Snackbar.LENGTH_SHORT)
+        .setAction("XEM GIỎ", view -> {
+            // Navigate to CartFragment
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.putExtra("navigate_to", "cart");
+            startActivity(intent);
+        })
+        .show();
+});
+```
+
+### Màn hình Giỏ hàng (CartFragment)
+
+Giỏ hàng hiển thị danh sách sản phẩm đã thêm, cho phép chỉnh sửa số lượng và xóa:
+
+**Cấu trúc layout:**
+
+- **RecyclerView:** Danh sáchCartItemEntity với swipe-to-delete (ItemTouchHelper).
+- **Mỗi item:** Ảnh sản phẩm + tên + giá + nút tăng/giảm số lượng + tổng tiền dòng.
 - **Bottom Summary Bar:** Tổng tiền + nút "Tiến hành thanh toán".
-- **Empty State:** Hình minh họa + thông báo "Giỏ hàng trống".
+- **Empty State:** Illustration + thông báo "Giỏ hàng trống" khi không có sản phẩm.
 
-**Màn hình Đăng nhập (LoginActivity):**
+**Xử lý tăng/giảm số lượng:**
 
-![Thiết kế giao diện Đăng nhập](images/mobile-ui-login.png){#fig:ui-login width=80%}
+```java
+binding.btnIncrease.setOnClickListener(v -> {
+    int newQty = item.getQuantity() + 1;
+    if (newQty <= 99) {
+        item.setQuantity(newQty);
+        item.setTotalPrice(item.getUnitPrice() * newQty);
+        cartViewModel.updateCartItem(item);
+    }
+});
 
-Cấu trúc bao gồm:
+binding.btnDecrease.setOnClickListener(v -> {
+    int newQty = item.getQuantity() - 1;
+    if (newQty >= 1) {
+        item.setQuantity(newQty);
+        item.setTotalPrice(item.getUnitPrice() * newQty);
+        cartViewModel.updateCartItem(item);
+    } else {
+        // Hiển thị dialog xác nhận xóa
+        showDeleteConfirmDialog(item);
+    }
+});
+```
+
+### Màn hình Đăng nhập (LoginActivity)
+
+**Cấu trúc layout:**
 
 - **Logo SmartVN** ở trên cùng.
-- **Trường nhập liệu:** Email + Mật khẩu với xác thực.
-- **Nút Đăng nhập.**
-- **Đăng nhập xã hội:** Nút Google.
-- **Liên kết:** "Chưa có tài khoản? Đăng ký ngay".
+- **TextInputLayout:** Email + Password với validation.
+- **MaterialButton:** Đăng nhập.
+- **Divider:** "Hoặc đăng nhập với"
+- **Social Login Buttons:** Google, GitHub (icon tròn).
+- **Link:** "Chưa có tài khoản? Đăng ký ngay".
 
-**Màn hình Checkout (CheckoutActivity):**
+**Luồng xác thực:**
 
-![Thiết kế giao diện Checkout](images/mobile-ui-checkout.png){#fig:ui-checkout width=80%}
+```java
+binding.btnLogin.setOnClickListener(v -> {
+    String email = binding.etEmail.getText().toString().trim();
+    String password = binding.etPassword.getText().toString().trim();
 
-Cấu trúc bao gồm:
+    // Validation phía client
+    if (email.isEmpty()) {
+        binding.tilEmail.setError("Vui lòng nhập email");
+        return;
+    }
+    if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        binding.tilEmail.setError("Email không hợp lệ");
+        return;
+    }
+    if (password.isEmpty()) {
+        binding.tilPassword.setError("Vui lòng nhập mật khẩu");
+        return;
+    }
+    if (password.length() < 6) {
+        binding.tilPassword.setError("Mật khẩu tối thiểu 6 ký tự");
+        return;
+    }
 
-- **Section 1 — Địa chỉ giao hàng:** Tên, số điện thoại, địa chỉ chi tiết.
+    // Gọi API đăng nhập
+    loginViewModel.login(email, password);
+});
+```
+
+### Màn hình Checkout (CheckoutActivity)
+
+**Cấu trúc layout:**
+
+- **Section 1 — Địa chỉ giao hàng:** Tên, SĐT, địa chỉ chi tiết (editable).
 - **Section 2 — Phương thức thanh toán:** COD / VNPay (RadioGroup).
-- **Section 3 — Tóm tắt đơn hàng:** Danh sách sản phẩm, tổng tiền, phí vận chuyển.
+- **Section 3 — Tóm tắt đơn hàng:** Danh sách sản phẩm, subtotal, phí ship, tổng cộng.
 - **Bottom Bar:** Tổng tiền + nút "Đặt hàng".
 
-**Màn hình Đơn hàng (OrderFragment):**
+**Màu sắc và Typography:**
 
-![Thiết kế giao diện Danh sách đơn hàng](images/mobile-ui-orders.png){#fig:ui-orders width=80%}
+```xml
+<!-- colors.xml — Material Design 3 palette -->
+<resources>
+    <color name="md_theme_primary">#1B6B3A</color>         <!-- Xanh lá — thương hiệu -->
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_primaryContainer">#A4F5B7</color>
+    <color name="md_theme_secondary">#4A6350</color>
+    <color name="md_theme_surface">#FDFDF5</color>
+    <color name="md_theme_surfaceVariant">#DEE5D9</color>
+    <color name="price_red">#D32F2F</color>                 <!-- Giá sản phẩm -->
+    <color name="discount_orange">#FF6D00</color>           <!-- Nhãn giảm giá -->
+    <color name="star_yellow">#FFC107</color>               <!-- Đánh giá sao -->
+</resources>
+```
 
-Cấu trúc bao gồm:
+### Responsive Design
 
-- **RecyclerView:** Danh sách đơn hàng với trạng thái màu sắc.
-- **Mỗi item:** Mã đơn hàng, ngày đặt, số lượng sản phẩm, tổng tiền, trạng thái.
-- **Empty State:** Thông báo "Chưa có đơn hàng nào".
+Ứng dụng hỗ trợ nhiều kích thước màn hình:
 
-**Màn hình Tài khoản (ProfileFragment):**
+- **Phone nhỏ (< 5 inch):** Grid 1 cột sản phẩm.
+- **Phone tiêu chuẩn (5-6.5 inch):** Grid 2 cột sản phẩm.
+- **Tablet (> 7 inch):** Grid 3-4 cột sản phẩm, sử dụng `sw600dp` resource qualifier.
 
-![Thiết kế giao diện Tài khoản](images/mobile-ui-profile.png){#fig:ui-profile width=80%}
+```xml
+<!-- res/values/integers.xml -->
+<integer name="grid_column_count">2</integer>
 
-Cấu trúc bao gồm:
+<!-- res/values-sw600dp/integers.xml -->
+<integer name="grid_column_count">3</integer>
 
-- **Avatar và tên người dùng** ở trên cùng.
-- **Menu items:** Đơn hàng của tôi, Địa chỉ giao hàng, Đổi mật khẩu, Đăng xuất.
+<!-- res/values-sw720dp/integers.xml -->
+<integer name="grid_column_count">4</integer>
+```
+## Các module chức năng chính
 
-## 7.4 Thiết kế cơ sở dữ liệu cục bộ
+### Module 1: Xác thực người dùng (Authentication)
 
-### 7.4.1 Bảng Cached Products (Sản phẩm đã cache)
+Module xác thực là module quan trọng nhất, xử lý đăng ký, đăng nhập và quản lý token JWT.
 
-| Trường | Kiểu dữ liệu | Mô tả |
-|---|---|---|
-| productId | Long (PK) | Mã sản phẩm |
-| name | String | Tên sản phẩm |
-| description | String | Mô tả sản phẩm |
-| price | Double | Giá sản phẩm |
-| imageUrl | String | URL hình ảnh |
-| category | String | Danh mục |
-| rating | Double | Đánh giá trung bình |
-| reviewCount | Integer | Số lượng đánh giá |
-| cachedAt | Long | Thời điểm cache (timestamp) |
+**Luồng đăng nhập:**
 
-### 7.4.2 Bảng Cart Items (Giỏ hàng cục bộ)
+```
+┌──────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Login   │────▶│ LoginViewModel│────▶│  AuthRepo    │────▶│  Backend API │
+│ Activity │     │              │     │              │     │  /auth/login │
+└──────────┘     └──────┬───────┘     └──────┬───────┘     └──────┬───────┘
+                        │                    │                    │
+                        │  LiveData          │  Save token        │  JWT + Refresh
+                        │  <LoginResult>     │  to SharedPrefs    │  Token
+                        ▼                    ▼                    ▼
+                  ┌──────────┐        ┌──────────────┐     ┌──────────────┐
+                  │  UI      │        │ TokenManager │     │  User Info   │
+                  │  Update  │        │ (Singleton)  │     │              │
+                  └──────────┘        └──────────────┘     └──────────────┘
+```
 
-| Trường | Kiểu dữ liệu | Mô tả |
-|---|---|---|
-| id | Integer (PK, auto) | Mã tự tăng |
-| productId | Long | Mã sản phẩm |
-| productName | String | Tên sản phẩm |
-| productImage | String | URL hình ảnh |
-| unitPrice | Double | Đơn giá |
-| quantity | Integer | Số lượng |
-| totalPrice | Double | Thành tiền (đơn giá × số lượng) |
+**TokenManager — Quản lý JWT Token:**
 
-### 7.4.3 Mô hình ERD cục bộ
+```java
+public class TokenManager {
+    private static TokenManager instance;
+    private final SharedPreferences prefs;
+    private final SharedPreferences.Editor editor;
 
-![Mô hình ERD cơ sở dữ liệu cục bộ trên Android](images/mobile-erd-local.png){#fig:mobile-erd width=70%}
+    private static final String PREF_NAME = "smartvn_auth";
+    private static final String KEY_ACCESS_TOKEN = "access_token";
+    private static final String KEY_REFRESH_TOKEN = "refresh_token";
+    private static final String KEY_USER_ID = "user_id";
+    private static final String KEY_USER_EMAIL = "user_email";
+    private static final String KEY_USER_NAME = "user_name";
 
-## 7.5 Thiết kế kiến trúc tổng thể mobile
+    private TokenManager(Context context) {
+        prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        editor = prefs.edit();
+    }
 
-### 7.5.1 Sơ đồ kiến trúc ứng dụng
+    public static synchronized TokenManager getInstance() {
+        return instance;
+    }
 
-![Sơ đồ kiến trúc MVVM ứng dụng Mobile](images/mobile-architecture.png){#fig:mobile-arch width=90%}
+    public static synchronized void init(Context context) {
+        if (instance == null) {
+            instance = new TokenManager(context);
+        }
+    }
 
-### 7.5.2 Luồng dữ liệu tổng thể
+    public void saveTokens(String accessToken, String refreshToken) {
+        editor.putString(KEY_ACCESS_TOKEN, accessToken);
+        editor.putString(KEY_REFRESH_TOKEN, refreshToken);
+        editor.apply();
+    }
 
-![Luồng dữ liệu trong ứng dụng Mobile](images/mobile-data-flow.png){#fig:mobile-data-flow width=90%}
+    public void saveUserInfo(Long userId, String email, String name) {
+        editor.putLong(KEY_USER_ID, userId);
+        editor.putString(KEY_EMAIL, email);
+        editor.putString(KEY_NAME, name);
+        editor.apply();
+    }
 
-**Mô tả luồng:**
+    public String getAccessToken() {
+        return prefs.getString(KEY_ACCESS_TOKEN, null);
+    }
 
-1. **View (UI):** Hiển thị dữ liệu, nhận tương tác người dùng.
-2. **ViewModel:** Xử lý logic giao diện, gọi Repository.
-3. **Repository:** Quyết định nguồn dữ liệu (cache hay network).
-4. **Remote Data Source:** Gọi API thông qua Retrofit.
-5. **Local Data Source:** Đọc/ghi Room Database.
-6. **API Gateway → Backend Services:** Xử lý nghiệp vụ và trả về dữ liệu.
+    public boolean isLoggedIn() {
+        return getAccessToken() != null;
+    }
 
-### 7.5.3 Cấu trúc thư mục dự án
+    public void clearAll() {
+        editor.clear();
+        editor.apply();
+    }
+}
+```
+
+**AuthRepository — Xử lý đăng nhập/đăng ký:**
+
+```java
+public class AuthRepository {
+    private final ApiService apiService;
+    private final TokenManager tokenManager;
+    private final MutableLiveData<AuthResult> authResult = new MutableLiveData<>();
+
+    public AuthRepository(ApiService apiService, TokenManager tokenManager) {
+        this.apiService = apiService;
+        this.tokenManager = tokenManager;
+    }
+
+    public LiveData<AuthResult> getAuthResult() {
+        return authResult;
+    }
+
+    public void login(String email, String password) {
+        LoginRequest request = new LoginRequest(email, password);
+        apiService.login(request).enqueue(new Callback<ApiResponse<LoginResponse>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<LoginResponse>> call,
+                                   Response<ApiResponse<LoginResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    LoginResponse data = response.body().getData();
+                    tokenManager.saveTokens(data.getAccessToken(), data.getRefreshToken());
+                    tokenManager.saveUserInfo(data.getUserId(), data.getEmail(), data.getName());
+                    authResult.postValue(AuthResult.success(data));
+                } else {
+                    String errorMsg = parseError(response);
+                    authResult.postValue(AuthResult.error(errorMsg));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<LoginResponse>> call, Throwable t) {
+                authResult.postValue(AuthResult.error("Lỗi kết nối: " + t.getMessage()));
+            }
+        });
+    }
+
+    public void loginWithGoogle(String idToken) {
+        // Gọi API OAuth2 Google
+        GoogleLoginRequest request = new GoogleLoginRequest(idToken);
+        apiService.loginWithGoogle(request).enqueue(/* ... */);
+    }
+
+    public void logout() {
+        tokenManager.clearAll();
+        authResult.postValue(AuthResult.loggedOut());
+    }
+}
+```
+
+**Refresh Token tự động:**
+
+```java
+public class TokenAuthenticator implements Authenticator {
+    @Override
+    public Request authenticate(Route route, Response response) throws IOException {
+        if (response.code() == 401) {
+            // Thử refresh token
+            String refreshToken = TokenManager.getInstance().getRefreshToken();
+            if (refreshToken != null) {
+                Response<ApiResponse<TokenResponse>> refreshResponse =
+                    apiService.refreshToken(refreshToken).execute();
+
+                if (refreshResponse.isSuccessful() && refreshResponse.body() != null) {
+                    String newToken = refreshResponse.body().getData().getAccessToken();
+                    TokenManager.getInstance().saveTokens(
+                        newToken,
+                        refreshResponse.body().getData().getRefreshToken()
+                    );
+
+                    // Retry request cũ với token mới
+                    return response.request().newBuilder()
+                        .header("Authorization", "Bearer " + newToken)
+                        .build();
+                }
+            }
+            // Refresh thất bại → logout
+            TokenManager.getInstance().clearAll();
+        }
+        return null;
+    }
+}
+```
+
+### Module 2: Danh mục & Tìm kiếm sản phẩm
+
+**ProductRepository — Strategy Pattern cho Cache:**
+
+```java
+public class ProductRepository {
+    private final ApiService apiService;
+    private final ProductDao productDao;
+    private static final long CACHE_TTL = 10 * 60 * 1000; // 10 phút
+
+    public LiveData<List<Product>> getProducts(String category, int page) {
+        return new NetworkBoundResource<List<Product>, List<CachedProduct>>(
+            // Called when fetch from DB
+            () -> {
+                if (category == null || category.equals("all")) {
+                    return productDao.getAllProducts();
+                }
+                return productDao.getProductsByCategory(category);
+            },
+            // Called when fetch from network
+            () -> apiService.getProducts(page, 20, category),
+            // Called to save network result
+            products -> {
+                List<CachedProduct> cached = mapToCached(products);
+                productDao.insertProducts(cached);
+            },
+            // Called to decide whether to fetch from network
+            cachedProducts -> {
+                if (cachedProducts == null || cachedProducts.isEmpty()) return true;
+                long oldestCached = cachedProducts.get(0).getCachedAt();
+                return System.currentTimeMillis() - oldestCached > CACHE_TTL;
+            }
+        ).asLiveData();
+    }
+}
+```
+
+**SearchFragment — Tìm kiếm real-time:**
+
+```java
+public class SearchFragment extends Fragment {
+    private FragmentSearchBinding binding;
+    private ProductViewModel viewModel;
+    private ProductAdapter adapter;
+    private Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchRunnable;
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        binding = FragmentSearchBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        setupRecyclerView();
+        setupSearchView();
+        observeViewModel();
+    }
+
+    private void setupSearchView() {
+        // Debounce search — chờ 500ms sau khi ngừng gõ
+        binding.etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
+                }
+                searchRunnable = () -> {
+                    String query = s.toString().trim();
+                    if (query.length() >= 2) {
+                        viewModel.searchProducts(query);
+                    }
+                };
+                searchHandler.postDelayed(searchRunnable, 500);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void observeViewModel() {
+        viewModel.getSearchResults().observe(getViewLifecycleOwner(), products -> {
+            adapter.submitList(products);
+            binding.tvNoResults.setVisibility(
+                products.isEmpty() ? View.VISIBLE : View.GONE
+            );
+        });
+    }
+}
+```
+
+### Module 3: Giỏ hàng (Shopping Cart)
+
+Giỏ hàng sử dụng **Room Database** làm nguồn dữ liệu chính (offline-first), đồng bộ với server khi có mạng.
+
+**CartRepository:**
+
+```java
+public class CartRepository {
+    private final CartDao cartDao;
+    private final ApiService apiService;
+    private final LiveData<List<CartItemEntity>> cartItems;
+    private final LiveData<Double> cartTotal;
+    private final LiveData<Integer> cartItemCount;
+
+    public CartRepository(Application application) {
+        SmartVNDatabase db = SmartVNDatabase.getInstance(application);
+        cartDao = db.cartDao();
+        apiService = ApiClient.getClient().create(ApiService.class);
+        cartItems = cartDao.getAllCartItems();
+        cartTotal = cartDao.getCartTotal();
+        cartItemCount = cartDao.getCartItemCount();
+    }
+
+    public LiveData<List<CartItemEntity>> getCartItems() { return cartItems; }
+    public LiveData<Double> getCartTotal() { return cartTotal; }
+    public LiveData<Integer> getCartItemCount() { return cartItemCount; }
+
+    public void addToCart(CartItemEntity item) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            // Kiểm tra sản phẩm đã có trong giỏ chưa
+            CartItemEntity existing = cartDao.getCartItemByProductId(item.getProductId());
+            if (existing != null) {
+                existing.setQuantity(existing.getQuantity() + item.getQuantity());
+                existing.setTotalPrice(existing.getUnitPrice() * existing.getQuantity());
+                cartDao.updateCartItem(existing);
+            } else {
+                cartDao.insertCartItem(item);
+            }
+        });
+    }
+
+    public void updateQuantity(CartItemEntity item, int newQuantity) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            if (newQuantity <= 0) {
+                cartDao.deleteCartItem(item);
+            } else {
+                item.setQuantity(newQuantity);
+                item.setTotalPrice(item.getUnitPrice() * newQuantity);
+                cartDao.updateCartItem(item);
+            }
+        });
+    }
+
+    public void removeFromCart(CartItemEntity item) {
+        Executors.newSingleThreadExecutor().execute(() -> cartDao.deleteCartItem(item));
+    }
+
+    public void clearCart() {
+        Executors.newSingleThreadExecutor().execute(() -> cartDao.clearCart());
+    }
+
+    // Đồng bộ giỏ hàng lên server khi cần
+    public void syncWithServer() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            List<CartItemEntity> localItems = cartDao.getAllCartItemsSync();
+            List<CartItem> serverItems = mapToServerFormat(localItems);
+            apiService.syncCart(serverItems).enqueue(new Callback<ApiResponse<Void>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Void>> call,
+                                       Response<ApiResponse<Void>> response) {
+                    // Sync thành công
+                }
+                @Override
+                public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                    // Retry sau
+                }
+            });
+        });
+    }
+}
+```
+
+### Module 4: Đặt hàng & Thanh toán
+
+**Luồng đặt hàng:**
+
+```
+CartFragment → CheckoutActivity → OrderRepository → Backend API
+                    │                    │
+                    │                    ├── Tạo đơn hàng (POST /orders)
+                    │                    ├── Gọi VNPay API tạo payment URL
+                    │                    │
+                    │                    ▼
+                    │              PaymentActivity (WebView/Chrome Custom Tab)
+                    │                    │
+                    │                    ├── Thanh toán thành công → callback VNPay
+                    │                    ├── Backend xác nhận → Order status = PAID
+                    │                    │
+                    │                    ▼
+                    │              OrderSuccessFragment
+                    │
+                    └── Xóa giỏ hàng sau khi đặt thành công
+```
+
+**OrderRepository:**
+
+```java
+public class OrderRepository {
+    private final ApiService apiService;
+    private final CartRepository cartRepository;
+
+    public void createOrder(OrderRequest request, OrderCallback callback) {
+        apiService.createOrder(request).enqueue(new Callback<ApiResponse<Order>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Order>> call,
+                                   Response<ApiResponse<Order>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Order order = response.body().getData();
+
+                    // Xóa giỏ hàng sau khi đặt hàng thành công
+                    cartRepository.clearCart();
+
+                    if (request.getPaymentMethod().equals("VNPAY")) {
+                        // Tạo payment URL
+                        createVNPayPayment(order.getId(), order.getTotalAmount(), callback);
+                    } else {
+                        // COD — đơn hàng đã tạo xong
+                        callback.onSuccess(order);
+                    }
+                } else {
+                    callback.onError(parseError(response));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Order>> call, Throwable t) {
+                callback.onError("Lỗi kết nối: " + t.getMessage());
+            }
+        });
+    }
+
+    private void createVNPayPayment(Long orderId, Double amount, OrderCallback callback) {
+        VNPayRequest request = new VNPayRequest(orderId, amount);
+        apiService.createVNPayUrl(request).enqueue(new Callback<ApiResponse<VNPayResponse>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<VNPayResponse>> call,
+                                   Response<ApiResponse<VNPayResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String paymentUrl = response.body().getData().getPaymentUrl();
+                    callback.onPaymentUrlReady(paymentUrl);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<VNPayResponse>> call, Throwable t) {
+                callback.onError("Không tạo được link thanh toán");
+            }
+        });
+    }
+}
+```
+
+**Mở VNPay qua Chrome Custom Tab:**
+
+```java
+// Trong CheckoutActivity
+viewModel.getPaymentUrl().observe(this, paymentUrl -> {
+    if (paymentUrl != null) {
+        // Sử dụng Chrome Custom Tab cho trải nghiệm tốt hơn WebView
+        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+        builder.setToolbarColor(ContextCompat.getColor(this, R.color.md_theme_primary));
+        builder.setShowTitle(true);
+        CustomTabsIntent customTabsIntent = builder.build();
+        customTabsIntent.launchUrl(this, Uri.parse(paymentUrl));
+    }
+});
+```
+
+### Module 5: Quản lý đơn hàng
+
+**OrderAdapter — Hiển thị danh sách đơn hàng:**
+
+```java
+public class OrderAdapter extends ListAdapter<Order, OrderAdapter.OrderViewHolder> {
+    private static final DiffUtil.ItemCallback<Order> DIFF_CALLBACK =
+        new DiffUtil.ItemCallback<Order>() {
+            @Override
+            public boolean areItemsTheSame(@NonNull Order oldItem, @NonNull Order newItem) {
+                return oldItem.getId().equals(newItem.getId());
+            }
+            @Override
+            public boolean areContentsTheSame(@NonNull Order oldItem, @NonNull Order newItem) {
+                return oldItem.equals(newItem);
+            }
+        };
+
+    public OrderAdapter() {
+        super(DIFF_CALLBACK);
+    }
+
+    @NonNull
+    @Override
+    public OrderViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        ItemOrderBinding binding = ItemOrderBinding.inflate(
+            LayoutInflater.from(parent.getContext()), parent, false);
+        return new OrderViewHolder(binding);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
+        holder.bind(getItem(position));
+    }
+
+    class OrderViewHolder extends RecyclerView.ViewHolder {
+        private final ItemOrderBinding binding;
+
+        OrderViewHolder(ItemOrderBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
+        }
+
+        void bind(Order order) {
+            binding.tvOrderId.setText("#" + order.getId());
+            binding.tvOrderDate.setText(formatDate(order.getCreatedAt()));
+            binding.tvOrderTotal.setText(formatPrice(order.getTotalAmount()));
+
+            // Trạng thái đơn hàng với màu sắc
+            OrderStatus status = OrderStatus.valueOf(order.getStatus());
+            binding.tvOrderStatus.setText(status.getDisplayName());
+            binding.tvOrderStatus.setTextColor(status.getColor());
+            binding.tvOrderStatus.setBackgroundColor(status.getBackgroundColor());
+
+            // Số lượng sản phẩm
+            binding.tvItemCount.setText(order.getItems().size() + " sản phẩm");
+
+            // Click để xem chi tiết
+            binding.getRoot().setOnClickListener(v -> {
+                Intent intent = new Intent(v.getContext(), OrderDetailActivity.class);
+                intent.putExtra("order_id", order.getId());
+                v.getContext().startActivity(intent);
+            });
+        }
+    }
+}
+```
+
+**Enum trạng thái đơn hàng:**
+
+```java
+public enum OrderStatus {
+    PENDING("Chờ xác nhận", "#FFA000", "#FFF8E1"),
+    CONFIRMED("Đã xác nhận", "#1976D2", "#E3F2FD"),
+    SHIPPING("Đang giao", "#7B1FA2", "#F3E5F5"),
+    DELIVERED("Đã giao", "#388E3C", "#E8F5E9"),
+    CANCELLED("Đã hủy", "#D32F2F", "#FFEBEE");
+
+    private final String displayName;
+    private final int color;
+    private final int backgroundColor;
+
+    OrderStatus(String displayName, String colorHex, String bgHex) {
+        this.displayName = displayName;
+        this.color = Color.parseColor(colorHex);
+        this.backgroundColor = Color.parseColor(bgHex);
+    }
+
+    public String getDisplayName() { return displayName; }
+    public int getColor() { return color; }
+    public int getBackgroundColor() { return backgroundColor; }
+}
+```
+## Tích hợp với Backend Microservices
+
+### Cấu hình kết nối API
+
+Ứng dụng mobile kết nối với hệ thống backend thông qua **API Gateway** (port 8080) — điểm vào duy nhất cho tất cả request.
+
+**Lưu ý khi chạy trên Android Emulator:**
+
+- `10.0.2.2` là địa chỉ IP trỏ về `localhost` của máy host.
+- Khi chạy trên thiết bị thật, cần thay bằng IP thực của server.
+- Production sử dụng domain thật (ví dụ: `https://api.smartvn.vn`).
+
+**Cấu hình Base URL theo môi trường:**
+
+```java
+public class Config {
+    // Development — Android Emulator
+    public static final String BASE_URL_DEV = "http://10.0.2.2:8080/";
+
+    // Staging
+    public static final String BASE_URL_STAGING = "http://staging-api.smartvn.vn/";
+
+    // Production
+    public static final String BASE_URL_PROD = "https://api.smartvn.vn/";
+
+    // Chọn môi trường
+    public static final String BASE_URL = BASE_URL_DEV;
+
+    // Timeout
+    public static final int CONNECT_TIMEOUT = 30;
+    public static final int READ_TIMEOUT = 30;
+    public static final int WRITE_TIMEOUT = 30;
+}
+```
+
+### NetworkBoundResource — Cache-First Strategy
+
+Mô hình **NetworkBoundResource** giúp quản lý luồng dữ liệu: ưu tiên đọc cache, đồng thời cập nhật từ network:
+
+```java
+public abstract class NetworkBoundResource<ResultType, RequestType> {
+    private final MediatorLiveData<Resource<ResultType>> result = new MediatorLiveData<>();
+
+    public NetworkBoundResource(Callable<LiveData<ResultType>> loadFromDb,
+                                 Callable<Call<ApiResponse<RequestType>>> createCall,
+                                 Consumer<RequestType> saveCallResult,
+                                 Predicate<ResultType> shouldFetch) {
+        result.setValue(Resource.loading(null));
+
+        LiveData<ResultType> dbSource = loadFromDb.call();
+        result.addSource(dbSource, data -> {
+            result.removeSource(dbSource);
+            if (shouldFetch.test(data)) {
+                fetchFromNetwork(dbSource, createCall, saveCallResult);
+            } else {
+                result.setValue(Resource.success(data));
+            }
+        });
+    }
+
+    private void fetchFromNetwork(LiveData<ResultType> dbSource,
+                                   Callable<Call<ApiResponse<RequestType>>> createCall,
+                                   Consumer<RequestType> saveCallResult) {
+        // Hiển data từ cache trong khi chờ network
+        result.addSource(dbSource, newData -> result.setValue(Resource.loading(newData)));
+
+        try {
+            createCall.call().enqueue(new Callback<ApiResponse<RequestType>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<RequestType>> call,
+                                       Response<ApiResponse<RequestType>> response) {
+                    result.removeSource(dbSource);
+                    if (response.isSuccessful() && response.body() != null) {
+                        saveCallResult.accept(response.body().getData());
+                        // Reload từ DB sau khi save
+                        result.addSource(loadFromDb.call(),
+                            newData -> result.setValue(Resource.success(newData)));
+                    } else {
+                        result.addSource(dbSource,
+                            newData -> result.setValue(Resource.error("Lỗi server", newData)));
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse<RequestType>> call, Throwable t) {
+                    result.removeSource(dbSource);
+                    result.addSource(dbSource,
+                        newData -> result.setValue(Resource.error(t.getMessage(), newData)));
+                }
+            });
+        } catch (Exception e) {
+            result.removeSource(dbSource);
+            result.addSource(dbSource,
+                newData -> result.setValue(Resource.error(e.getMessage(), newData)));
+        }
+    }
+
+    public LiveData<Resource<ResultType>> asLiveData() {
+        return result;
+    }
+}
+
+// Resource wrapper
+public class Resource<T> {
+    public enum Status { LOADING, SUCCESS, ERROR }
+
+    private final Status status;
+    private final T data;
+    private final String message;
+
+    private Resource(Status status, T data, String message) {
+        this.status = status;
+        this.data = data;
+        this.message = message;
+    }
+
+    public static <T> Resource<T> loading(T data) {
+        return new Resource<>(Status.LOADING, data, null);
+    }
+
+    public static <T> Resource<T> success(T data) {
+        return new Resource<>(Status.SUCCESS, data, null);
+    }
+
+    public static <T> Resource<T> error(String msg, T data) {
+        return new Resource<>(Status.ERROR, data, msg);
+    }
+
+    public Status getStatus() { return status; }
+    public T getData() { return data; }
+    public String getMessage() { return message; }
+}
+```
+
+### Xử lý lỗi mạng và ngoại lệ
+
+**Global Exception Handler:**
+
+```java
+public class ApiExceptionHandler {
+    public static String handle(Throwable throwable) {
+        if (throwable instanceof SocketTimeoutException) {
+            return "Hết thời gian kết nối. Vui lòng thử lại.";
+        } else if (throwable instanceof ConnectException) {
+            return "Không thể kết nối đến server. Kiểm tra kết nối mạng.";
+        } else if (throwable instanceof UnknownHostException) {
+            return "Không tìm thấy server. Kiểm tra kết nối mạng.";
+        } else if (throwable instanceof IOException) {
+            return "Lỗi mạng. Vui lòng thử lại.";
+        } else {
+            return "Đã xảy ra lỗi: " + throwable.getMessage();
+        }
+    }
+
+    public static String handleHttpError(int code) {
+        switch (code) {
+            case 400: return "Yêu cầu không hợp lệ.";
+            case 401: return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+            case 403: return "Bạn không có quyền truy cập.";
+            case 404: return "Không tìm thấy tài nguyên.";
+            case 409: return "Dữ liệu bị xung đột.";
+            case 422: return "Dữ liệu không hợp lệ.";
+            case 429: return "Quá nhiều yêu cầu. Vui lòng đợi.";
+            case 500: return "Lỗi server nội bộ.";
+            case 502: return "Server tạm thời không khả dụng.";
+            case 503: return "Server đang bảo trì.";
+            default: return "Lỗi không xác định (" + code + ").";
+        }
+    }
+}
+```
+
+**Xử lý 401 Unauthorized tự động:**
+
+```java
+// Trong BaseActivity — tất cả Activity kế thừa
+public abstract class BaseActivity extends AppCompatActivity {
+
+    protected void handleApiError(int code, String message) {
+        if (code == 401) {
+            // Token hết hạn → logout và chuyển về LoginActivity
+            TokenManager.getInstance().clearAll();
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            Toast.makeText(this, "Phiên đăng nhập đã hết hạn", Toast.LENGTH_LONG).show();
+        } else {
+            showErrorSnackbar(message);
+        }
+    }
+
+    private void showErrorSnackbar(String message) {
+        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG)
+            .setBackgroundTint(getColor(R.color.error_red))
+            .setAction("Đóng", v -> {})
+            .show();
+    }
+}
+```
+
+### Kiểm tra kết nối mạng
+
+```java
+public class NetworkUtils {
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager cm = (ConnectivityManager)
+            context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnected();
+    }
+
+    public static boolean isOnline() {
+        try {
+            InetAddress address = InetAddress.getByName("google.com");
+            return !address.equals("");
+        } catch (UnknownHostException e) {
+            return false;
+        }
+    }
+}
+
+// Sử dụng trong Repository
+public void fetchData() {
+    if (!NetworkUtils.isNetworkAvailable(context)) {
+        // Hiển thị dữ liệu từ cache
+        showCachedData();
+        showOfflineMessage();
+        return;
+    }
+    // Gọi API bình thường
+    fetchFromApi();
+}
+```
+
+### Xử lý bất đồng bộ với Executor
+
+Tất cả thao tác database trong Room phải chạy trên **background thread**. Sử dụng `Executors` để quản lý:
+
+```java
+public class AppExecutors {
+    private static final AppExecutors INSTANCE = new AppExecutors();
+
+    private final Executor diskIO;
+    private final Executor networkIO;
+    private final Executor mainThread;
+
+    private AppExecutors() {
+        diskIO = Executors.newSingleThreadExecutor();
+        networkIO = Executors.newFixedThreadPool(3);
+        mainThread = new MainThreadExecutor();
+    }
+
+    public static AppExecutors getInstance() { return INSTANCE; }
+    public Executor diskIO() { return diskIO; }
+    public Executor networkIO() { return networkIO; }
+    public Executor mainThread() { return mainThread; }
+
+    private static class MainThreadExecutor implements Executor {
+        private final Handler mainThreadHandler = new Handler(Looper.getMainLooper());
+        @Override
+        public void execute(Runnable command) {
+            mainThreadHandler.post(command);
+        }
+    }
+}
+
+// Sử dụng:
+AppExecutors.getInstance().diskIO().execute(() -> {
+    // Thao tác DB trên background thread
+    List<CartItemEntity> items = cartDao.getAllCartItemsSync();
+
+    AppExecutors.getInstance().mainThread().execute(() -> {
+        // Cập nhật UI trên main thread
+        adapter.submitList(items);
+    });
+});
+```
+
+### Cấu trúc thư mục dự án Android
 
 ```
 com.smartvn.app/
+├── SmartVNApplication.java          // Application class, init singletons
+├── Config.java                       // Constants, base URL
+│
 ├── data/
-│   ├── local/          # Room Database, DAO, Entity
-│   ├── remote/         # Retrofit, API Interface, Interceptor
-│   ├── model/          # Data classes (Product, Order, User)
-│   └── repository/     # Repository pattern implementations
+│   ├── local/
+│   │   ├── SmartVNDatabase.java     // Room Database
+│   │   ├── dao/
+│   │   │   ├── ProductDao.java
+│   │   │   └── CartDao.java
+│   │   └── entity/
+│   │       ├── CachedProduct.java
+│   │       └── CartItemEntity.java
+│   │
+│   ├── remote/
+│   │   ├── ApiClient.java           // Retrofit setup
+│   │   ├── ApiService.java          // API interface
+│   │   ├── AuthInterceptor.java     // JWT interceptor
+│   │   └── TokenAuthenticator.java  // Auto refresh token
+│   │
+│   ├── model/
+│   │   ├── Product.java
+│   │   ├── Order.java
+│   │   ├── User.java
+│   │   └── CartItem.java
+│   │
+│   └── repository/
+│       ├── ProductRepository.java
+│       ├── CartRepository.java
+│       ├── OrderRepository.java
+│       └── AuthRepository.java
+│
 ├── ui/
-│   ├── auth/           # Login, Register screens
-│   ├── main/           # MainActivity, Navigation
-│   ├── home/           # Home screen, Product list
-│   ├── search/         # Search functionality
-│   ├── product/        # Product detail
-│   ├── cart/           # Shopping cart
-│   ├── checkout/       # Checkout flow
-│   ├── order/          # Order list, Order detail
-│   └── profile/        # User profile, Settings
-├── utils/              # Utility classes (Network, Token, Format)
-└── widget/             # Custom views (Badge, Price formatter)
+│   ├── auth/
+│   │   ├── LoginActivity.java
+│   │   ├── LoginViewModel.java
+│   │   ├── RegisterActivity.java
+│   │   └── RegisterViewModel.java
+│   │
+│   ├── main/
+│   │   ├── MainActivity.java
+│   │   ├── MainViewModel.java
+│   │   └── NavigationManager.java
+│   │
+│   ├── home/
+│   │   ├── HomeFragment.java
+│   │   ├── HomeViewModel.java
+│   │   └── ProductAdapter.java
+│   │
+│   ├── search/
+│   │   ├── SearchFragment.java
+│   │   └── SearchViewModel.java
+│   │
+│   ├── product/
+│   │   ├── ProductDetailActivity.java
+│   │   ├── ProductDetailViewModel.java
+│   │   └── ImageSliderAdapter.java
+│   │
+│   ├── cart/
+│   │   ├── CartFragment.java
+│   │   ├── CartViewModel.java
+│   │   └── CartAdapter.java
+│   │
+│   ├── checkout/
+│   │   ├── CheckoutActivity.java
+│   │   └── CheckoutViewModel.java
+│   │
+│   ├── order/
+│   │   ├── OrderFragment.java
+│   │   ├── OrderViewModel.java
+│   │   ├── OrderAdapter.java
+│   │   ├── OrderDetailActivity.java
+│   │   └── OrderDetailViewModel.java
+│   │
+│   └── profile/
+│       ├── ProfileFragment.java
+│       └── ProfileViewModel.java
+│
+├── utils/
+│   ├── NetworkUtils.java
+│   ├── AppExecutors.java
+│   ├── TokenManager.java
+│   ├── FormatUtils.java
+│   └── ApiExceptionHandler.java
+│
+└── widget/
+    ├── BadgeDrawable.java            // Cart badge trên BottomNav
+    └── PriceTextView.java            // Format giá tiền custom view
 ```
-# CHƯƠNG 8: XÂY DỰNG ỨNG DỤNG MOBILE
 
-## 8.1 Cấu hình dự án
-
-### 8.1.1 Cấu hình Gradle
-
-Dự án Android được cấu hình với các thông số chính:
-
-- **Application ID:** com.smartvn.app
-- **Min SDK:** API 26 (Android 8.0 Oreo)
-- **Target SDK:** API 34 (Android 14)
-- **Compile SDK:** API 34
-- **Java Version:** 17
-
-ViewBinding được bật để hỗ trợ truy cập type-safe đến các view trong layout XML.
-
-### 8.1.2 Cấu hình kết nối API
-
-Ứng dụng kết nối với hệ thống backend thông qua API Gateway — điểm vào duy nhất cho tất cả yêu cầu HTTP. Lưu ý quan trọng khi chạy trên Android Emulator:
-
-- Địa chỉ `10.0.2.2` trỏ về `localhost` của máy host (dùng cho phát triển).
-- Khi chạy trên thiết bị thật, cần thay bằng IP thực của server.
-- Môi trường production sử dụng domain thật.
-
-## 8.2 Xây dựng các màn hình chức năng
-
-### 8.2.1 Màn hình Đăng ký
-
-![Giao diện trang Đăng ký](images/mobile-screen-register.png){#fig:screen-register width=70%}
-
-Màn hình đăng ký bao gồm các trường nhập liệu (Họ, Tên, Email, Mật khẩu) với xác thực thời gian thực. Hệ thống kiểm tra:
-
-- Email đúng định dạng và chưa được sử dụng.
-- Mật khẩu tối thiểu 6 ký tự.
-- Tất cả trường bắt buộc phải được điền.
-
-Khi đăng ký thành công, người dùng được chuyển đến trang đăng nhập với thông báo xác nhận.
-
-### 8.2.2 Màn hình Đăng nhập
-
-![Giao diện trang Đăng nhập](images/mobile-screen-login.png){#fig:screen-login width=70%}
-
-Màn hình đăng nhập hỗ trợ hai phương thức:
-
-- **Email/Mật khẩu:** Nhập thông tin và nhấn "Đăng nhập".
-- **Đăng nhập Google:** Nhấn nút Google, chọn tài khoản, hệ thống tự động xác thực.
-
-Sau khi đăng nhập thành công, JWT token được lưu vào SharedPreferences mã hóa. Token này được tự động đính kèm vào mọi yêu cầu HTTP thông qua Interceptor.
-
-### 8.2.3 Màn hình Trang chủ
-
-![Giao diện Trang chủ](images/mobile-screen-home.png){#fig:screen-home width=70%}
-
-Trang chủ hiển thị nội dung theo cấu trúc:
-
-- **Banner quảng cáo:** ViewPager2 với auto-scroll, hiển thị các chương trình khuyến mãi.
-- **Bộ lọc danh mục:** ChipGroup cuộn ngang — Tất cả, Điện tử, Thời trang, Gia dụng, Sách, Mỹ phẩm.
-- **Flash Sale:** Sản phẩm giảm giá với đồng hồ đếm ngược.
-- **Sản phẩm phổ biến:** RecyclerView dạng lưới 2 cột, hỗ trợ kéo để làm mới (SwipeRefreshLayout).
-
-### 8.2.4 Màn hình Chi tiết sản phẩm
-
-![Giao diện Chi tiết sản phẩm](images/mobile-screen-product-detail.png){#fig:screen-product-detail width=70%}
-
-Màn hình chi tiết hiển thị đầy đủ thông tin sản phẩm:
-
-- **Hình ảnh:** ViewPager2 cho phép xem nhiều hình ảnh với indicator dots.
-- **Thông tin cơ bản:** Tên, giá (định dạng VNĐ), đánh giá sao, số lượng đã bán.
-- **Mô tả:** Văn bản mô tả chi tiết với khả năng mở rộng/thu gọn.
-- **Đánh giá:** Danh sách đánh giá từ khách hàng khác.
-- **Hành động:** Bottom bar cố định với nút "Thêm vào giỏ" và "Mua ngay".
-
-Khi nhấn "Thêm vào giỏ", sản phẩm được lưu vào Room Database và hiển thị Snackbar xác nhận với nút "XEM GIỎ" để chuyển nhanh đến trang giỏ hàng.
-
-### 8.2.5 Màn hình Tìm kiếm
-
-![Giao diện Tìm kiếm sản phẩm](images/mobile-screen-search.png){#fig:screen-search width=70%}
-
-Màn hình tìm kiếm với cơ chế debounce (chờ 500ms sau khi ngừng gõ):
-
-- Trường nhập liệu tìm kiếm ở trên cùng.
-- Kết quả hiển thị dạng lưới sản phẩm.
-- Hiển thị "Không tìm thấy kết quả" khi không có sản phẩm phù hợp.
-- Tìm kiếm tối thiểu 2 ký tự.
-
-### 8.2.6 Màn hình Giỏ hàng
-
-![Giao diện Giỏ hàng](images/mobile-screen-cart.png){#fig:screen-cart width=70%}
-
-Giỏ hàng hiển thị danh sách sản phẩm đã thêm:
-
-- Mỗi sản phẩm hiển thị: hình ảnh, tên, đơn giá, nút tăng/giảm số lượng, thành tiền.
-- Thao tác vuốt sang trái để xóa sản phẩm (ItemTouchHelper).
-- Tự động cập nhật tổng tiền khi thay đổi số lượng.
-- Bottom bar hiển thị tổng tiền và nút "Tiến hành thanh toán".
-- Khi giỏ trống: hiển thị hình minh họa và thông báo.
-
-Giỏ hàng sử dụng Room Database làm nguồn dữ liệu chính (offline-first), đảm bảo hoạt động ngay cả khi mất mạng.
-
-### 8.2.7 Màn hình Checkout
-
-![Giao diện Checkout](images/mobile-screen-checkout.png){#fig:screen-checkout width=70%}
-
-Trang checkout bao gồm ba phần:
-
-- **Địa chỉ giao hàng:** Nhập tên, số điện thoại, địa chỉ chi tiết.
-- **Phương thức thanh toán:** COD (thanh toán khi nhận hàng) hoặc VNPay (thanh toán trực tuyến).
-- **Tóm tắt đơn hàng:** Danh sách sản phẩm, tổng tiền hàng, phí vận chuyển, tổng cộng.
-
-Sau khi nhấn "Đặt hàng", hệ thống kiểm tra tồn kho, tạo đơn hàng và chuyển đến trang xác nhận.
-
-### 8.2.8 Màn hình Thanh toán VNPay
-
-![Giao diện Thanh toán VNPay](images/mobile-screen-vnpay.png){#fig:screen-vnpay width=70%}
-
-Khi chọn phương thức VNPay:
-
-- Hệ thống tạo URL thanh toán thông qua API backend.
-- Mở Chrome Custom Tab (trình duyệt trong ứng dụng) với URL thanh toán VNPay.
-- Người dùng chọn ngân hàng, nhập thông tin và xác nhận thanh toán.
-- Sau khi thanh toán, VNPay chuyển hướng về ứng dụng.
-- Hệ thống cập nhật trạng thái đơn hàng dự trên kết quả callback.
-
-### 8.2.9 Màn hình Đặt hàng thành công
-
-![Giao diện Đặt hàng thành công](images/mobile-screen-order-success.png){#fig:screen-order-success width=70%}
-
-Sau khi đặt hàng thành công:
-
-- Hiển thị biểu tượng xác nhận (checkmark animation).
-- Thông báo "Đặt hàng thành công!".
-- Mã đơn hàng để theo dõi.
-- Nút "Xem đơn hàng" để chuyển đến chi tiết đơn hàng.
-- Nút "Tiếp tục mua sắm" để quay về trang chủ.
-
-### 8.2.10 Màn hình Danh sách đơn hàng
-
-![Giao diện Danh sách đơn hàng](images/mobile-screen-orders.png){#fig:screen-orders width=70%}
-
-Danh sách đơn hàng hiển thị:
-
-- Mã đơn hàng, ngày đặt hàng.
-- Số lượng sản phẩm trong đơn.
-- Tổng tiền.
-- Trạng thái đơn hàng với màu sắc tương ứng:
-  - Chờ xác nhận (vàng)
-  - Đã xác nhận (xanh dương)
-  - Đang giao (tím)
-  - Đã giao (xanh lá)
-  - Đã hủy (đỏ)
-
-### 8.2.11 Màn hình Chi tiết đơn hàng
-
-![Giao diện Chi tiết đơn hàng](images/mobile-screen-order-detail.png){#fig:screen-order-detail width=70%}
-
-Chi tiết đơn hàng bao gồm:
-
-- Mã đơn hàng và ngày đặt.
-- Trạng thái đơn hàng hiện tại.
-- Danh sách sản phẩm đã đặt (tên, số lượng, đơn giá, thành tiền).
-- Địa chỉ giao hàng.
-- Phương thức thanh toán.
-- Tổng tiền.
-
-### 8.2.12 Màn hình Tài khoản
-
-![Giao diện Quản lý tài khoản](images/mobile-screen-profile.png){#fig:screen-profile width=70%}
-
-Trang tài khoản cho phép:
-
-- Xem và chỉnh sửa thông tin cá nhân (tên, số điện thoại).
-- Quản lý danh sách địa chỉ giao hàng.
-- Đổi mật khẩu.
-- Đăng xuất khỏi ứng dụng.
-
-## 8.3 Xử lý lỗi và ngoại lệ
-
-### 8.3.1 Xử lý lỗi mạng
-
-Hệ thống xử lý các loại lỗi mạng phổ biến:
-
-| Loại lỗi | Thông báo hiển thị |
-|---|---|
-| Hết thời gian kết nối | "Hết thời gian kết nối. Vui lòng thử lại." |
-| Không kết nối được server | "Không thể kết nối đến server. Kiểm tra kết nối mạng." |
-| Không tìm thấy server | "Không tìm thấy server. Kiểm tra kết nối mạng." |
-| Lỗi mạng chung | "Lỗi mạng. Vui lòng thử lại." |
-
-### 8.3.2 Xử lý lỗi HTTP
-
-| Mã lỗi | Thông báo hiển thị |
-|---|---|
-| 400 | "Yêu cầu không hợp lệ." |
-| 401 | "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại." |
-| 403 | "Bạn không có quyền truy cập." |
-| 404 | "Không tìm thấy tài nguyên." |
-| 429 | "Quá nhiều yêu cầu. Vui lòng đợi." |
-| 500 | "Lỗi server nội bộ." |
-| 503 | "Server đang bảo trì." |
-
-### 8.3.3 Xử lý 401 Unauthorized tự động
-
-Khi nhận phản hồi 401 từ server, hệ thống tự động:
-
-1. Thử làm mới token bằng Refresh Token.
-2. Nếu refresh thành công: gửi lại yêu cầu ban đầu với token mới.
-3. Nếu refresh thất bại: xóa token, chuyển về trang đăng nhập.
-
-Cơ chế này đảm bảo trải nghiệm liền mạch, người dùng không cần đăng nhập lại thường xuyên.
-
-### 8.3.4 Kiểm tra kết nối mạng
-
-Trước mỗi yêu cầu API, hệ thống kiểm tra trạng thái kết nối mạng:
-
-- Nếu có mạng: gửi yêu cầu bình thường.
-- Nếu mất mạng: hiển thị dữ liệu từ cache (nếu có) và thông báo "Đang offline".
-
-## 8.4 Demo ứng dụng
-
-### 8.4.1 Luồng sử dụng chính
-
-Luồng sử dụng hoàn chỉnh của ứng dụng:
-
-1. **Mở ứng dụng** → Màn hình Splash → Trang chủ (hiển thị sản phẩm từ cache hoặc server).
-2. **Duyệt sản phẩm** → Lọc danh mục → Tìm kiếm → Xem chi tiết.
-3. **Đăng nhập** → Nhập email/mật khẩu hoặc chọn Google → Xác thực thành công.
-4. **Mua sắm** → Thêm vào giỏ → Xem giỏ hàng → Điều chỉnh số lượng.
-5. **Đặt hàng** → Nhập địa chỉ → Chọn thanh toán → Xác nhận.
-6. **Thanh toán VNPay** → Chọn ngân hàng → Xác nhận → Quay về ứng dụng.
-7. **Theo dõi đơn hàng** → Xem trạng thái → Xem chi tiết.
-
-### 8.4.2 Trạng thái đơn hàng trong ứng dụng
-
-| Trạng thái | Màu sắc | Ý nghĩa |
-|---|---|---|
-| Chờ xác nhận | Vàng | Đơn hàng mới tạo, chờ shop xác nhận |
-| Đã xác nhận | Xanh dương | Shop đã xác nhận, chuẩn bị đóng gói |
-| Đang giao | Tím | Đơn hàng đang được vận chuyển |
-| Đã giao | Xanh lá | Đơn hàng đã giao thành công |
-| Đã hủy | Đỏ | Đơn hàng bị hủy bởi người dùng hoặc hệ thống |
-
-### 8.4.3 Tổng kết chương
-
-Ứng dụng mobile SmartVN Android được xây dựng với các nguyên tắc:
-
-- **Kiến trúc MVVM:** Tách biệt rõ ràng giữa UI, logic và dữ liệu.
-- **Offline-first:** Ưu tiên dữ liệu cục bộ, cập nhật từ server khi có mạng.
-- **Cache-first (NetworkBoundResource):** Hiển thị nhanh từ cache, đồng thời cập nhật từ network.
-- **Material Design 3:** Giao diện hiện đại, nhất quán với design system của Google.
-- **Type-safe API:** Retrofit giảm thiểu lỗi runtime khi gọi API.
-- **Auto token refresh:** Trải nghiệm đăng nhập liền mạch.
-- **Reactive UI:** LiveData tự động cập nhật giao diện khi dữ liệu thay đổi.
+### Tổng kết chương Mobile
+
+Ứng dụng mobile SmartVN Android được thiết kế và phát triển theo các nguyên tắc:
+
+- **MVVM architecture** đảm bảo tách biệt concerns, dễ test, dễ bảo trì.
+- **Offline-first** với Room Database — ứng dụng hoạt động tốt ngay cả khi mất mạng.
+- **Cache strategy** (NetworkBoundResource) — hiển thị dữ liệu nhanh từ cache, đồng thời cập nhật từ network.
+- **Material Design 3** — giao diện hiện đại, nhất quán với design system của Google.
+- **Type-safe API calls** với Retrofit — giảm thiểu lỗi runtime.
+- **Auto token refresh** — trải nghiệm đăng nhập liền mạch, không yêu cầu login lại thường xuyên.
+- **Reactive UI** với LiveData — tự động cập nhật giao diện khi dữ liệu thay đổi.
+- **Clean Architecture** — cấu trúc thư mục rõ ràng, dễ mở rộng và maintain.
 
 
 ewpage
